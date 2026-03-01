@@ -5,6 +5,7 @@ const { allowRoles, ROLES } = require('../middleware/rbac');
 const router = express.Router();
 
 const STORE_ADMINS = [ROLES.STORE_INCHARGE, ROLES.ADMIN, ROLES.SUPER_ADMIN];
+const CAN_ADD_RETAILER = [ROLES.STORE_INCHARGE, ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.SALESPERSON, ROLES.BILL_OPERATOR];
 
 // GET /api/retailers
 router.get('/', auth, async (req, res) => {
@@ -57,8 +58,8 @@ router.get('/:id', auth, async (req, res) => {
     }
 });
 
-// POST /api/retailers
-router.post('/', auth, allowRoles(...STORE_ADMINS), async (req, res) => {
+// POST /api/retailers — Store In-charge, Admin, Salesperson, Bill Operator can add
+router.post('/', auth, allowRoles(...CAN_ADD_RETAILER), async (req, res) => {
     try {
         const { firm_name, owner_name, phone, alt_phone, email, address, area_id, gst_number, credit_limit } = req.body;
         if (!firm_name) return res.status(400).json({ error: 'firm_name is required.' });

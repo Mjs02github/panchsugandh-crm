@@ -6,11 +6,12 @@ const NAV_CONFIG = {
         { label: 'Orders', icon: '📋', path: '/orders' },
         { label: 'New Order', icon: '➕', path: '/orders/new' },
         { label: 'Payments', icon: '💰', path: '/payments' },
+        { label: 'Parties', icon: '🏪', path: '/store/retailers' }, // ← NEW
         { label: 'Visits', icon: '🗺️', path: '/visits' },
     ],
     bill_operator: [
         { label: 'Queue', icon: '📄', path: '/billing' },
-        { label: 'History', icon: '✅', path: '/billing/done' },
+        { label: 'Parties', icon: '🏪', path: '/store/retailers' }, // ← NEW
     ],
     delivery_incharge: [
         { label: 'Pending', icon: '🚚', path: '/delivery' },
@@ -24,19 +25,19 @@ const NAV_CONFIG = {
     sales_officer: [
         { label: 'Team', icon: '👥', path: '/team' },
         { label: 'Orders', icon: '📋', path: '/orders' },
-        { label: 'Targets', icon: '🎯', path: '/targets' },
+        { label: 'Visits', icon: '🗺️', path: '/visits' },
     ],
     admin: [
         { label: 'Dashboard', icon: '📊', path: '/dashboard' },
         { label: 'Orders', icon: '📋', path: '/orders' },
+        { label: 'Parties', icon: '🏪', path: '/store/retailers' },
         { label: 'Users', icon: '👤', path: '/admin/users' },
-        { label: 'Reports', icon: '📈', path: '/reports' },
     ],
     super_admin: [
         { label: 'Dashboard', icon: '📊', path: '/dashboard' },
         { label: 'Orders', icon: '📋', path: '/orders' },
+        { label: 'Parties', icon: '🏪', path: '/store/retailers' },
         { label: 'Users', icon: '👤', path: '/admin/users' },
-        { label: 'Reports', icon: '📈', path: '/reports' },
     ],
 };
 
