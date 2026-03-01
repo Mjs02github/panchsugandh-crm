@@ -133,4 +133,54 @@ router.patch('/:id', auth, allowRoles(...ADMINS), async (req, res) => {
     }
 });
 
+// GET /api/users/:id/areas — Get assigned areas for a user
+router.get('/:id/areas', auth, allowRoles(...ADMINS, ROLES.SALES_OFFICER), async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            `SELECT a.id, a.name 
+             FROM user_areas ua 
+             JOIN areas a ON ua.area_id = a.id 
+             WHERE ua.user_id = ?`,
+            [req.params.id]
+        );
+        res.json(rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error.' });
+    }
+});
+
+// PUT /api/users/:id/areas — Assign areas to a user
+router.put('/:id/areas', auth, allowRoles(...ADMINS), async (req, res) => {
+    const connection = await db.getConnection();
+    try {
+        const { area_ids } = req.body;
+        if (!Array.isArray(area_ids)) {
+            return res.status(400).json({ error: 'area_ids must be an array.' });
+        }
+
+        await connection.beginTransaction();
+
+        await connection.query('DELETE FROM user_areas WHERE user_id = ?', [req.params.id]);
+
+        if (area_ids.length > 0) {
+            const values = area_ids.map(areaId => [req.params.id, areaId]);
+            await connection.query(
+                'INSERT INTO user_areas (user_id, area_id) VALUES ?',
+                [values]
+            );
+        }
+
+        await connection.commit();
+        res.json({ message: 'Areas assigned successfully.' });
+    } catch (err) {
+        await connection.rollback();
+        console.error(err);
+        res.status(500).json({ error: 'Server error.' });
+    } finally {
+        connection.release();
+    }
+});
+
 module.exports = router;
+

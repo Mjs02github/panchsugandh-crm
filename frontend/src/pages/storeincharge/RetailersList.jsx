@@ -135,21 +135,20 @@ export default function RetailersList() {
                             onChange={e => setForm(f => ({ ...f, address: e.target.value }))} />
                     </div>
 
-                    {/* GST and Credit Limit — only for store_incharge and above */}
-                    {canEdit && (
-                        <div className="grid grid-cols-2 gap-2">
-                            <div>
-                                <label className="label">GST No.</label>
-                                <input className="input" value={form.gst_number}
-                                    onChange={e => setForm(f => ({ ...f, gst_number: e.target.value }))} />
-                            </div>
+                    <div className="grid grid-cols-2 gap-2">
+                        <div>
+                            <label className="label">GST No.</label>
+                            <input className="input" value={form.gst_number}
+                                onChange={e => setForm(f => ({ ...f, gst_number: e.target.value }))} />
+                        </div>
+                        {canEdit && (
                             <div>
                                 <label className="label">Credit Limit (₹)</label>
                                 <input className="input" type="number" min="0" value={form.credit_limit}
                                     onChange={e => setForm(f => ({ ...f, credit_limit: e.target.value }))} />
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
 
                     <button type="submit" className="btn-primary" disabled={saving}>
                         {saving ? 'Saving…' : '✅ Add Party'}
