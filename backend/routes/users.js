@@ -7,7 +7,26 @@ const router = express.Router();
 
 const ADMINS = [ROLES.SUPER_ADMIN, ROLES.ADMIN];
 
-// GET /api/users — list users (admins see all; sales_officer sees their team)
+// GET /api/users/roles/list — must be before /:id to avoid route conflict
+router.get('/roles/list', auth, allowRoles(...ADMINS), async (req, res) => {
+    try {
+        let rows;
+        if (req.user.role === ROLES.SUPER_ADMIN) {
+            // Super Admin sees ALL roles
+            [rows] = await db.query('SELECT id, name FROM roles ORDER BY id');
+        } else {
+            // Admin cannot create super_admin or another admin
+            [rows] = await db.query(
+                "SELECT id, name FROM roles WHERE name NOT IN ('super_admin','admin') ORDER BY id"
+            );
+        }
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Server error.' });
+    }
+});
+
+
 router.get('/', auth, async (req, res) => {
     try {
         let rows;
@@ -63,6 +82,14 @@ router.post('/', auth, allowRoles(...ADMINS), async (req, res) => {
             return res.status(400).json({ error: 'name, email, password, role_id are required.' });
         }
 
+        // Regular admin cannot create super_admin or admin accounts
+        if (req.user.role === ROLES.ADMIN) {
+            const [roleRow] = await db.query('SELECT name FROM roles WHERE id = ?', [role_id]);
+            if (roleRow.length && ['super_admin', 'admin'].includes(roleRow[0].name)) {
+                return res.status(403).json({ error: 'Admin cannot create Super Admin or Admin accounts.' });
+            }
+        }
+
         const hashedPw = await bcrypt.hash(password, 10);
         const [result] = await db.query(
             `INSERT INTO users (name, email, phone, password, role_id, manager_id, created_by)
@@ -102,16 +129,6 @@ router.patch('/:id', auth, allowRoles(...ADMINS), async (req, res) => {
         res.json({ message: 'User updated successfully.' });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ error: 'Server error.' });
-    }
-});
-
-// GET /api/users/roles/list
-router.get('/roles/list', auth, allowRoles(...ADMINS), async (req, res) => {
-    try {
-        const [rows] = await db.query('SELECT id, name FROM roles ORDER BY id');
-        res.json(rows);
-    } catch (err) {
         res.status(500).json({ error: 'Server error.' });
     }
 });
