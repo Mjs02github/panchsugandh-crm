@@ -31,7 +31,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // POST /api/products
-router.post('/', auth, allowRoles(ROLES.STORE_INCHARGE, ROLES.ADMIN, ROLES.SUPER_ADMIN), async (req, res) => {
+router.post('/', auth, allowRoles(ROLES.STORE_INCHARGE, ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.BILL_OPERATOR), async (req, res) => {
     const conn = await db.getConnection();
     try {
         await conn.beginTransaction();
@@ -62,7 +62,7 @@ router.post('/', auth, allowRoles(ROLES.STORE_INCHARGE, ROLES.ADMIN, ROLES.SUPER
 });
 
 // PATCH /api/products/:id/stock  — adjust inventory
-router.patch('/:id/stock', auth, allowRoles(ROLES.STORE_INCHARGE, ROLES.ADMIN, ROLES.SUPER_ADMIN), async (req, res) => {
+router.patch('/:id/stock', auth, allowRoles(ROLES.STORE_INCHARGE, ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.BILL_OPERATOR), async (req, res) => {
     try {
         const { qty_on_hand } = req.body;
         if (qty_on_hand === undefined) return res.status(400).json({ error: 'qty_on_hand is required.' });
@@ -74,7 +74,7 @@ router.patch('/:id/stock', auth, allowRoles(ROLES.STORE_INCHARGE, ROLES.ADMIN, R
 });
 
 // PATCH /api/products/:id
-router.patch('/:id', auth, allowRoles(ROLES.STORE_INCHARGE, ROLES.ADMIN, ROLES.SUPER_ADMIN), async (req, res) => {
+router.patch('/:id', auth, allowRoles(ROLES.STORE_INCHARGE, ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.BILL_OPERATOR), async (req, res) => {
     try {
         const fields = ['name', 'sku', 'category', 'unit', 'mrp', 'sale_price', 'hsn_code', 'gst_rate', 'description', 'is_active'];
         const updates = {};

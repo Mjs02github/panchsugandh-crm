@@ -103,7 +103,7 @@ export default function App() {
             <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin']}><AreasList /></ProtectedRoute>
           } />
           <Route path="/store/products" element={
-            <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin']}><ProductsList /></ProtectedRoute>
+            <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin', 'bill_operator']}><ProductsList /></ProtectedRoute>
           } />
 
           {/* ── Sales Officer ── */}

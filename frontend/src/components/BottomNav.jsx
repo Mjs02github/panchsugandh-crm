@@ -12,6 +12,7 @@ const NAV_CONFIG = {
     bill_operator: [
         { label: 'Queue', icon: '📄', path: '/billing' },
         { label: 'Parties', icon: '🏪', path: '/store/retailers' }, // ← NEW
+        { label: 'Products', icon: '📦', path: '/store/products' },
     ],
     delivery_incharge: [
         { label: 'Pending', icon: '🚚', path: '/delivery' },

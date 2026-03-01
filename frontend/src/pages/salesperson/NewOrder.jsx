@@ -144,8 +144,9 @@ export default function NewOrder() {
                                     </div>
                                     <div>
                                         <label className="label text-xs">Rate (₹)</label>
-                                        <input type="number" step="0.01" className="input" value={item.unit_price}
-                                            onChange={e => updateItem(i, 'unit_price', e.target.value)} />
+                                        <div className="input bg-gray-50 flex items-center h-[42px] text-gray-600 font-medium">
+                                            {item.unit_price ? `₹${item.unit_price}` : '—'}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
