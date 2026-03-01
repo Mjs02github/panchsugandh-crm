@@ -1,0 +1,378 @@
+const express = require('express');
+const db = require('../db');
+const auth = require('../middleware/auth');
+const { allowRoles, ROLES } = require('../middleware/rbac');
+const router = express.Router();
+
+const ALL_ORDER_ROLES = [
+    ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.SALES_OFFICER,
+    ROLES.SALESPERSON, ROLES.BILL_OPERATOR, ROLES.DELIVERY_INCHARGE,
+];
+
+// ── Helper: generate order number ──────────────────────────
+async function generateOrderNumber() {
+    const year = new Date().getFullYear();
+    const [rows] = await db.query(
+        'SELECT COUNT(*) AS cnt FROM sales_orders WHERE YEAR(created_at) = ?', [year]
+    );
+    const seq = String(rows[0].cnt + 1).padStart(6, '0');
+    return `SO-${year}-${seq}`;
+}
+
+// ─────────────────────────────────────────────────────────
+// GET /api/orders
+// Role-filtered listing
+// ─────────────────────────────────────────────────────────
+router.get('/', auth, allowRoles(...ALL_ORDER_ROLES), async (req, res) => {
+    try {
+        const { status, date, retailer_id, page = 1, limit = 30 } = req.query;
+        const { role, id: userId, managerId } = req.user;
+
+        let conditions = [];
+        let params = [];
+
+        // Role-based data scoping
+        if (role === ROLES.SALESPERSON) {
+            conditions.push('so.salesperson_id = ?');
+            params.push(userId);
+        } else if (role === ROLES.SALES_OFFICER) {
+            // only orders of salespeople under this officer
+            conditions.push('u.manager_id = ?');
+            params.push(userId);
+        } else if (role === ROLES.BILL_OPERATOR) {
+            conditions.push("so.status IN ('PENDING','BILLED')");
+        } else if (role === ROLES.DELIVERY_INCHARGE) {
+            conditions.push("so.status IN ('BILLED','DELIVERED')");
+        }
+        // admin / super_admin see everything → no extra filter
+
+        if (status) { conditions.push('so.status = ?'); params.push(status); }
+        if (date) { conditions.push('so.order_date = ?'); params.push(date); }
+        if (retailer_id) { conditions.push('so.retailer_id = ?'); params.push(retailer_id); }
+
+        const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+
+        const [rows] = await db.query(
+            `SELECT so.id, so.order_number, so.order_date, so.status,
+              so.total_amount, so.bill_number, so.bill_date,
+              so.delivery_date, so.delivery_remark,
+              r.firm_name AS retailer_name, r.phone AS retailer_phone,
+              a.name AS area_name,
+              u.name AS salesperson_name
+       FROM sales_orders so
+       JOIN retailers r ON so.retailer_id = r.id
+       LEFT JOIN areas a ON r.area_id = a.id
+       JOIN users u ON so.salesperson_id = u.id
+       ${where}
+       ORDER BY so.created_at DESC
+       LIMIT ? OFFSET ?`,
+            [...params, parseInt(limit), offset]
+        );
+        res.json(rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error.' });
+    }
+});
+
+// ─────────────────────────────────────────────────────────
+// GET /api/orders/:id  — order detail with items
+// ─────────────────────────────────────────────────────────
+router.get('/:id', auth, allowRoles(...ALL_ORDER_ROLES), async (req, res) => {
+    try {
+        const [orders] = await db.query(
+            `SELECT so.*, r.firm_name AS retailer_name, r.phone AS retailer_phone,
+              a.name AS area_name, u.name AS salesperson_name
+       FROM sales_orders so
+       JOIN retailers r ON so.retailer_id = r.id
+       LEFT JOIN areas a ON r.area_id = a.id
+       JOIN users u ON so.salesperson_id = u.id
+       WHERE so.id = ?`,
+            [req.params.id]
+        );
+        if (!orders.length) return res.status(404).json({ error: 'Order not found.' });
+
+        const [items] = await db.query(
+            `SELECT oi.*, p.name AS product_name, p.unit, p.sku
+       FROM order_items oi
+       JOIN products p ON oi.product_id = p.id
+       WHERE oi.order_id = ?`,
+            [req.params.id]
+        );
+
+        res.json({ ...orders[0], items });
+    } catch (err) {
+        res.status(500).json({ error: 'Server error.' });
+    }
+});
+
+// ─────────────────────────────────────────────────────────
+// POST /api/orders — Create new sales order (Salesperson)
+// ─────────────────────────────────────────────────────────
+router.post('/', auth, allowRoles(ROLES.SALESPERSON, ROLES.ADMIN, ROLES.SUPER_ADMIN), async (req, res) => {
+    const conn = await db.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        const { retailer_id, order_date, items, notes, discount } = req.body;
+
+        if (!retailer_id || !order_date || !items || !items.length) {
+            await conn.rollback();
+            return res.status(400).json({
+                error: 'retailer_id, order_date, and at least one item are required.',
+            });
+        }
+
+        // Validate each item
+        for (const item of items) {
+            if (!item.product_id || !item.qty_ordered || item.qty_ordered < 1) {
+                await conn.rollback();
+                return res.status(400).json({ error: 'Each item must have product_id and qty_ordered >= 1.' });
+            }
+        }
+
+        // Compute totals
+        let subtotal = 0;
+        let gst_amount = 0;
+
+        const enrichedItems = [];
+        for (const item of items) {
+            const [pRows] = await conn.query(
+                'SELECT id, sale_price, gst_rate FROM products WHERE id = ? AND is_active = 1',
+                [item.product_id]
+            );
+            if (!pRows.length) {
+                await conn.rollback();
+                return res.status(400).json({ error: `Product id ${item.product_id} not found.` });
+            }
+            const p = pRows[0];
+            const unit_price = item.unit_price || p.sale_price;
+            const disc_pct = item.discount_pct || 0;
+            const qty = parseInt(item.qty_ordered);
+            const lineBase = unit_price * qty * (1 - disc_pct / 100);
+            const lineGst = lineBase * (p.gst_rate / 100);
+
+            subtotal += lineBase;
+            gst_amount += lineGst;
+
+            enrichedItems.push({
+                product_id: p.id,
+                qty_ordered: qty,
+                unit_price,
+                discount_pct: disc_pct,
+                gst_rate: p.gst_rate,
+                line_amount: parseFloat((lineBase + lineGst).toFixed(2)),
+            });
+        }
+
+        const discountAmt = parseFloat(discount || 0);
+        const total_amount = parseFloat((subtotal + gst_amount - discountAmt).toFixed(2));
+        const order_number = await generateOrderNumber();
+
+        // Insert order header
+        const [oResult] = await conn.query(
+            `INSERT INTO sales_orders
+         (order_number, retailer_id, salesperson_id, order_date,
+          subtotal, discount, gst_amount, total_amount, notes)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [order_number, retailer_id, req.user.id, order_date,
+                parseFloat(subtotal.toFixed(2)), discountAmt,
+                parseFloat(gst_amount.toFixed(2)), total_amount, notes || null]
+        );
+
+        const orderId = oResult.insertId;
+
+        // Insert order items
+        for (const ei of enrichedItems) {
+            await conn.query(
+                `INSERT INTO order_items
+           (order_id, product_id, qty_ordered, unit_price, discount_pct, gst_rate, line_amount)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [orderId, ei.product_id, ei.qty_ordered, ei.unit_price,
+                    ei.discount_pct, ei.gst_rate, ei.line_amount]
+            );
+            // Reserve inventory
+            await conn.query(
+                'UPDATE inventory SET qty_reserved = qty_reserved + ? WHERE product_id = ?',
+                [ei.qty_ordered, ei.product_id]
+            );
+        }
+
+        // Audit log
+        await conn.query(
+            `INSERT INTO audit_log (user_id, action, entity_type, entity_id, new_value)
+       VALUES (?, 'ORDER_CREATED', 'order', ?, ?)`,
+            [req.user.id, orderId, JSON.stringify({ order_number, total_amount })]
+        );
+
+        await conn.commit();
+        res.status(201).json({
+            id: orderId,
+            order_number,
+            total_amount,
+            message: 'Sales order created successfully.',
+        });
+    } catch (err) {
+        await conn.rollback();
+        console.error('Create order error:', err);
+        res.status(500).json({ error: 'Failed to create order.' });
+    } finally {
+        conn.release();
+    }
+});
+
+// ─────────────────────────────────────────────────────────
+// PATCH /api/orders/:id/bill — Bill Operator marks billed
+// ─────────────────────────────────────────────────────────
+router.patch('/:id/bill', auth, allowRoles(ROLES.BILL_OPERATOR, ROLES.ADMIN, ROLES.SUPER_ADMIN), async (req, res) => {
+    const conn = await db.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        const { bill_number, bill_date, items } = req.body;
+        if (!bill_number) {
+            return res.status(400).json({ error: 'bill_number is required.' });
+        }
+
+        const [orders] = await conn.query(
+            "SELECT * FROM sales_orders WHERE id = ? AND status = 'PENDING'",
+            [req.params.id]
+        );
+        if (!orders.length) {
+            await conn.rollback();
+            return res.status(404).json({ error: 'Order not found or already processed.' });
+        }
+
+        // Update order status to BILLED
+        await conn.query(
+            `UPDATE sales_orders
+       SET status = 'BILLED', bill_number = ?, bill_date = ?,
+           billed_by = ?, billed_at = NOW()
+       WHERE id = ?`,
+            [bill_number, bill_date || new Date().toISOString().slice(0, 10),
+                req.user.id, req.params.id]
+        );
+
+        // If Bill Operator has adjusted quantities, update order items
+        if (items && items.length) {
+            for (const item of items) {
+                if (item.id && item.qty_billed !== undefined) {
+                    await conn.query(
+                        'UPDATE order_items SET qty_billed = ?, line_amount = ? WHERE id = ? AND order_id = ?',
+                        [item.qty_billed, item.line_amount || null, item.id, req.params.id]
+                    );
+                }
+            }
+        }
+
+        await conn.query(
+            `INSERT INTO audit_log (user_id, action, entity_type, entity_id, new_value)
+       VALUES (?, 'ORDER_BILLED', 'order', ?, ?)`,
+            [req.user.id, req.params.id, JSON.stringify({ bill_number })]
+        );
+
+        await conn.commit();
+        res.json({ message: 'Order marked as BILLED successfully.' });
+    } catch (err) {
+        await conn.rollback();
+        console.error('Bill order error:', err);
+        res.status(500).json({ error: 'Failed to update billing status.' });
+    } finally {
+        conn.release();
+    }
+});
+
+// ─────────────────────────────────────────────────────────
+// PATCH /api/orders/:id/deliver — Delivery In-charge marks delivered
+// NOTE: delivery_remark is MANDATORY
+// ─────────────────────────────────────────────────────────
+router.patch('/:id/deliver', auth, allowRoles(ROLES.DELIVERY_INCHARGE, ROLES.ADMIN, ROLES.SUPER_ADMIN), async (req, res) => {
+    const conn = await db.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        const { delivery_remark, delivery_date } = req.body;
+
+        // ── MANDATORY REMARK VALIDATION ──────────────────────
+        if (!delivery_remark || delivery_remark.trim() === '') {
+            await conn.rollback();
+            return res.status(400).json({
+                error: 'Delivery remark is required. Please enter details like "Handed to owner" or "Shop closed".',
+            });
+        }
+
+        const [orders] = await conn.query(
+            "SELECT * FROM sales_orders WHERE id = ? AND status = 'BILLED'",
+            [req.params.id]
+        );
+        if (!orders.length) {
+            await conn.rollback();
+            return res.status(404).json({ error: 'Order not found or not in BILLED status.' });
+        }
+
+        const dDate = delivery_date || new Date().toISOString().slice(0, 10);
+
+        await conn.query(
+            `UPDATE sales_orders
+       SET status = 'DELIVERED',
+           delivery_remark = ?,
+           delivery_date   = ?,
+           delivered_by    = ?,
+           delivered_at    = NOW()
+       WHERE id = ?`,
+            [delivery_remark.trim(), dDate, req.user.id, req.params.id]
+        );
+
+        // Release reserved inventory (deduct from qty_on_hand)
+        const [orderItems] = await conn.query(
+            'SELECT product_id, COALESCE(qty_billed, qty_ordered) AS qty FROM order_items WHERE order_id = ?',
+            [req.params.id]
+        );
+        for (const oi of orderItems) {
+            await conn.query(
+                `UPDATE inventory
+         SET qty_on_hand  = qty_on_hand - ?,
+             qty_reserved = qty_reserved - ?
+         WHERE product_id = ?`,
+                [oi.qty, oi.qty, oi.product_id]
+            );
+        }
+
+        await conn.query(
+            `INSERT INTO audit_log (user_id, action, entity_type, entity_id, new_value)
+       VALUES (?, 'DELIVERY_COMPLETED', 'order', ?, ?)`,
+            [req.user.id, req.params.id, JSON.stringify({ delivery_remark, delivery_date: dDate })]
+        );
+
+        await conn.commit();
+        res.json({ message: 'Order marked as DELIVERED successfully.' });
+    } catch (err) {
+        await conn.rollback();
+        console.error('Deliver order error:', err);
+        res.status(500).json({ error: 'Failed to update delivery status.' });
+    } finally {
+        conn.release();
+    }
+});
+
+// PATCH /api/orders/:id/cancel
+router.patch('/:id/cancel', auth, allowRoles(ROLES.ADMIN, ROLES.SUPER_ADMIN), async (req, res) => {
+    try {
+        const [orders] = await db.query(
+            "SELECT * FROM sales_orders WHERE id = ? AND status NOT IN ('DELIVERED','CANCELLED')",
+            [req.params.id]
+        );
+        if (!orders.length) return res.status(404).json({ error: 'Order not found or cannot be cancelled.' });
+
+        await db.query(
+            "UPDATE sales_orders SET status = 'CANCELLED' WHERE id = ?",
+            [req.params.id]
+        );
+        res.json({ message: 'Order cancelled.' });
+    } catch (err) {
+        res.status(500).json({ error: 'Server error.' });
+    }
+});
+
+module.exports = router;
