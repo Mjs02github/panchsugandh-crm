@@ -52,7 +52,7 @@ CREATE INDEX idx_users_manager ON users(manager_id);
 -- Default Super Admin (password: Admin@123)
 INSERT INTO users (role_id, name, email, phone, password, is_active) VALUES
 (1, 'Super Admin', 'superadmin@panchsugandh.com', '9999999999',
- '$2b$10$K8Jz3pY7vN1aL4mX2qR0OuzG6DwE5cH9bF7iT3sP4nW1yV6uQ8eZa', TRUE);
+ '$2a$10$6uhx7v2SdKa/jAQaqWJ4m.McW/MiDIAxcPaVW8ZvVKJs5VTZp4r46', TRUE);
 
 -- ============================================================
 -- 3. AREAS
