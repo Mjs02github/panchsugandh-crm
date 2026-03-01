@@ -6,6 +6,8 @@ import BottomNav from '../../components/BottomNav';
 export default function PaymentEntry() {
     const navigate = useNavigate();
     const [orders, setOrders] = useState([]);
+    const [selectedArea, setSelectedArea] = useState(''); // NEW
+
     const [form, setForm] = useState({
         order_id: '', retailer_id: '', collection_date: new Date().toISOString().slice(0, 10),
         amount: '', mode: 'CASH', reference_no: '', remarks: '',
@@ -22,6 +24,11 @@ export default function PaymentEntry() {
         const o = orders.find(o => String(o.id) === String(orderId));
         setForm(f => ({ ...f, order_id: orderId, retailer_id: o?.retailer_id || '' }));
     };
+
+    const uniqueAreas = Array.from(new Set(orders.map(o => o.area_name))).filter(Boolean).sort();
+    const filteredOrders = selectedArea
+        ? orders.filter(o => o.area_name === selectedArea)
+        : orders;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -44,20 +51,34 @@ export default function PaymentEntry() {
         <div className="pb-24">
             <div className="page-header">
                 <button onClick={() => navigate(-1)} className="text-gray-500 text-xl">←</button>
-                <h1 className="text-lg font-semibold">Record Payment</h1>
+                <h1 className="text-lg font-semibold flex-1">Record Payment</h1>
             </div>
 
             <form onSubmit={handleSubmit} className="px-4 py-4 space-y-4">
                 {error && <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl">{error}</div>}
                 {success && <div className="p-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-xl">{success}</div>}
 
+                {/* Area Filter */}
+                <div className="flex gap-2">
+                    <div className="flex-1">
+                        <label className="label">Filter by Area</label>
+                        <select className="input" value={selectedArea} onChange={e => {
+                            setSelectedArea(e.target.value);
+                            setForm(f => ({ ...f, order_id: '', retailer_id: '' }));
+                        }}>
+                            <option value="">All Areas</option>
+                            {uniqueAreas.map(a => <option key={a} value={a}>{a}</option>)}
+                        </select>
+                    </div>
+                </div>
+
                 <div>
-                    <label className="label">Select Order (Billed)</label>
+                    <label className="label">Select Order (Billed) *</label>
                     <select className="input" value={form.order_id} onChange={e => selectOrder(e.target.value)} required>
                         <option value="">Choose order…</option>
-                        {orders.map(o => (
+                        {filteredOrders.map(o => (
                             <option key={o.id} value={o.id}>
-                                {o.order_number} — {o.retailer_name} (₹{parseFloat(o.total_amount).toLocaleString('en-IN')})
+                                {o.order_number} — {o.retailer_name} {!selectedArea ? `(${o.area_name || 'No area'})` : ''} — ₹{parseFloat(o.total_amount).toLocaleString('en-IN')}
                             </option>
                         ))}
                     </select>
@@ -81,8 +102,8 @@ export default function PaymentEntry() {
                         {['CASH', 'CHEQUE', 'UPI', 'NEFT', 'CREDIT'].map(m => (
                             <button key={m} type="button"
                                 className={`py-2.5 rounded-xl text-sm font-medium border-2 transition-all ${form.mode === m
-                                        ? 'border-brand-600 bg-brand-50 text-brand-700'
-                                        : 'border-gray-200 text-gray-600'
+                                    ? 'border-brand-600 bg-brand-50 text-brand-700'
+                                    : 'border-gray-200 text-gray-600'
                                     }`}
                                 onClick={() => setForm(f => ({ ...f, mode: m }))}>
                                 {m}

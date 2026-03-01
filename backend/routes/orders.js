@@ -252,7 +252,7 @@ router.patch('/:id/bill', auth, allowRoles(ROLES.BILL_OPERATOR, ROLES.ADMIN, ROL
     try {
         await conn.beginTransaction();
 
-        const { bill_number, bill_date, items } = req.body;
+        const { bill_number, bill_date, items, final_amount } = req.body;
         if (!bill_number) {
             return res.status(400).json({ error: 'bill_number is required.' });
         }
@@ -266,15 +266,18 @@ router.patch('/:id/bill', auth, allowRoles(ROLES.BILL_OPERATOR, ROLES.ADMIN, ROL
             return res.status(404).json({ error: 'Order not found or already processed.' });
         }
 
-        // Update order status to BILLED
-        await conn.query(
-            `UPDATE sales_orders
-       SET status = 'BILLED', bill_number = ?, bill_date = ?,
-           billed_by = ?, billed_at = NOW()
-       WHERE id = ?`,
-            [bill_number, bill_date || new Date().toISOString().slice(0, 10),
-                req.user.id, req.params.id]
-        );
+        // Update order status to BILLED, and override total_amount if final_amount is provided
+        const updateParams = [bill_number, bill_date || new Date().toISOString().slice(0, 10), req.user.id];
+        let setQuery = `status = 'BILLED', bill_number = ?, bill_date = ?, billed_by = ?, billed_at = NOW()`;
+
+        if (final_amount !== undefined && final_amount !== '') {
+            setQuery += `, total_amount = ?`;
+            updateParams.push(final_amount);
+        }
+
+        updateParams.push(req.params.id);
+
+        await conn.query(`UPDATE sales_orders SET ${setQuery} WHERE id = ?`, updateParams);
 
         // If Bill Operator has adjusted quantities, update order items
         if (items && items.length) {

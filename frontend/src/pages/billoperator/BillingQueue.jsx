@@ -7,6 +7,7 @@ export default function BillingQueue() {
     const [selected, setSelected] = useState(null);
     const [billNum, setBillNum] = useState('');
     const [billDate, setBillDate] = useState(new Date().toISOString().slice(0, 10));
+    const [finalAmount, setFinalAmount] = useState('');
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
@@ -26,7 +27,7 @@ export default function BillingQueue() {
         setSubmitting(true);
         setError('');
         try {
-            await api.patch(`/orders/${orderId}/bill`, { bill_number: billNum, bill_date: billDate });
+            await api.patch(`/orders/${orderId}/bill`, { bill_number: billNum, bill_date: billDate, final_amount: finalAmount });
             setSuccess('Order marked as BILLED!');
             setSelected(null);
             setBillNum('');
@@ -74,9 +75,15 @@ export default function BillingQueue() {
                         {selected === o.id ? (
                             <div className="mt-3 space-y-3 border-t border-gray-100 pt-3">
                                 <div>
+                                    <label className="label text-xs">Final Billed Amount (₹) *</label>
+                                    <input type="number" step="0.01" className="input font-bold text-brand-700" value={finalAmount}
+                                        onChange={e => setFinalAmount(e.target.value)} required />
+                                    <p className="text-[10px] text-gray-400 mt-1">This amount overrides the salesman estimate for payment collections.</p>
+                                </div>
+                                <div>
                                     <label className="label text-xs">Bill Number *</label>
                                     <input type="text" className="input" value={billNum}
-                                        onChange={e => setBillNum(e.target.value)} placeholder="e.g. INV-2026-001" />
+                                        onChange={e => setBillNum(e.target.value)} placeholder="e.g. INV-2026-001" required />
                                 </div>
                                 <div>
                                     <label className="label text-xs">Bill Date</label>
@@ -95,7 +102,7 @@ export default function BillingQueue() {
                                 </div>
                             </div>
                         ) : (
-                            <button onClick={() => { setSelected(o.id); setSuccess(''); setError(''); }}
+                            <button onClick={() => { setSelected(o.id); setSuccess(''); setError(''); setFinalAmount(o.total_amount); setBillNum(''); }}
                                 className="mt-2 w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold">
                                 Mark as Billed
                             </button>
