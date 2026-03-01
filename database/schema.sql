@@ -1,13 +1,11 @@
 -- ============================================================
 -- Panchsugandh CRM - Database Schema
--- MySQL 8.0+
+-- MySQL 8.0+ / MariaDB
+-- Import into your existing database (Hostinger: u132595631_SJD_CRM)
 -- ============================================================
 
 SET FOREIGN_KEY_CHECKS = 0;
-DROP DATABASE IF EXISTS panchsugandh_crm;
-CREATE DATABASE panchsugandh_crm CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE panchsugandh_crm;
-SET FOREIGN_KEY_CHECKS = 1;
+
 
 -- ============================================================
 -- 1. ROLES
