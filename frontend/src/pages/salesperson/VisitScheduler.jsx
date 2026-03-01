@@ -7,6 +7,10 @@ export default function VisitScheduler() {
     const [retailers, setRetailers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
+
+    // Area filter for new visit form
+    const [selectedArea, setSelectedArea] = useState('');
+
     const [form, setForm] = useState({
         retailer_id: '',
         visit_date: new Date().toISOString().slice(0, 10),
@@ -25,8 +29,15 @@ export default function VisitScheduler() {
             .then(r => setVisits(r.data))
             .finally(() => setLoading(false));
     };
-    useEffect(() => { load(); api.get('/retailers').then(r => setRetailers(r.data)); }, []);
-    useEffect(() => { load(); }, [dateFilter]);
+
+    useEffect(() => {
+        load();
+        api.get('/retailers').then(r => setRetailers(r.data));
+    }, []);
+
+    useEffect(() => {
+        load();
+    }, [dateFilter]);
 
     const handleSave = async (e) => {
         e.preventDefault(); setError(''); setSaving(true);
@@ -35,6 +46,7 @@ export default function VisitScheduler() {
             setSuccess('Visit scheduled!');
             setShowForm(false);
             setForm({ retailer_id: '', visit_date: new Date().toISOString().slice(0, 10), purpose: '' });
+            setSelectedArea('');
             load();
         } catch (err) {
             setError(err.response?.data?.error || 'Failed to schedule visit.');
@@ -54,6 +66,21 @@ export default function VisitScheduler() {
         SKIPPED: { cls: 'bg-red-100 text-red-800', label: '⏭ Skipped' },
     };
 
+    // Derived values for scheduling form
+    const uniqueAreas = Array.from(new Set(retailers.map(r => r.area_name))).filter(Boolean).sort();
+    const filteredRetailers = selectedArea
+        ? retailers.filter(r => r.area_name === selectedArea)
+        : retailers;
+
+    // Group visits by area
+    const visitsByArea = visits.reduce((acc, v) => {
+        const area = v.area_name || 'Other';
+        if (!acc[area]) acc[area] = [];
+        acc[area].push(v);
+        return acc;
+    }, {});
+    const sortedAreas = Object.keys(visitsByArea).sort();
+
     return (
         <div className="pb-24">
             <div className="page-header">
@@ -69,11 +96,28 @@ export default function VisitScheduler() {
                     <h2 className="font-semibold text-gray-700">Schedule a Visit</h2>
                     {error && <p className="text-red-600 text-sm">{error}</p>}
                     {success && <p className="text-green-600 text-sm">{success}</p>}
+
+                    {/* Area Filter */}
+                    <div className="flex gap-2">
+                        <div className="flex-1">
+                            <label className="label">Filter by Area</label>
+                            <select className="input" value={selectedArea} onChange={e => {
+                                setSelectedArea(e.target.value);
+                                setForm(f => ({ ...f, retailer_id: '' }));
+                            }}>
+                                <option value="">All Areas</option>
+                                {uniqueAreas.map(a => <option key={a} value={a}>{a}</option>)}
+                            </select>
+                        </div>
+                    </div>
+
                     <div>
                         <label className="label">Retailer *</label>
                         <select className="input" value={form.retailer_id} onChange={e => setForm(f => ({ ...f, retailer_id: e.target.value }))} required>
                             <option value="">Select retailer…</option>
-                            {retailers.map(r => <option key={r.id} value={r.id}>{r.firm_name} — {r.area_name || 'No area'}</option>)}
+                            {filteredRetailers.map(r => (
+                                <option key={r.id} value={r.id}>{r.firm_name} {!selectedArea ? `— ${r.area_name || 'No area'}` : ''}</option>
+                            ))}
                         </select>
                     </div>
                     <div>
@@ -107,7 +151,7 @@ export default function VisitScheduler() {
                     onChange={e => setDateFilter(e.target.value)} />
             </div>
 
-            <div className="px-4 py-2 space-y-3">
+            <div className="px-4 py-2 space-y-4">
                 {loading ? (
                     <div className="flex justify-center py-10">
                         <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
@@ -117,44 +161,50 @@ export default function VisitScheduler() {
                         <div className="text-5xl mb-3">🗺️</div>
                         <p>No visits for this date</p>
                     </div>
-                ) : visits.map(v => {
-                    const sc = STATUS_CONFIG[v.status] || STATUS_CONFIG.SCHEDULED;
-                    return (
-                        <div key={v.id} className="card">
-                            <div className="flex items-start justify-between mb-1">
-                                <div>
-                                    <p className="font-semibold text-gray-800">{v.retailer_name}</p>
-                                    <p className="text-xs text-gray-500">{v.area_name || 'No area'}</p>
-                                    {v.purpose && <p className="text-xs text-brand-600 mt-0.5">🎯 {v.purpose}</p>}
-                                </div>
-                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${sc.cls}`}>{sc.label}</span>
-                            </div>
+                ) : sortedAreas.map(area => (
+                    <div key={area} className="space-y-2">
+                        <h3 className="font-bold text-gray-700 bg-gray-100 px-3 py-1.5 rounded-lg inline-block text-sm">📍 Area: {area}</h3>
+                        <div className="space-y-3">
+                            {visitsByArea[area].map(v => {
+                                const sc = STATUS_CONFIG[v.status] || STATUS_CONFIG.SCHEDULED;
+                                return (
+                                    <div key={v.id} className="card border-l-4" style={{ borderLeftColor: v.status === 'COMPLETED' ? '#10b981' : v.status === 'SKIPPED' ? '#ef4444' : '#eab308' }}>
+                                        <div className="flex items-start justify-between mb-1">
+                                            <div>
+                                                <p className="font-semibold text-gray-800">{v.retailer_name}</p>
+                                                {v.purpose && <p className="text-xs text-brand-600 mt-0.5">🎯 {v.purpose}</p>}
+                                            </div>
+                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${sc.cls}`}>{sc.label}</span>
+                                        </div>
 
-                            {v.checked_in_at && (
-                                <p className="text-xs text-gray-400">Checked in: {new Date(v.checked_in_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</p>
-                            )}
+                                        {v.checked_in_at && (
+                                            <p className="text-xs text-gray-400">Checked in: {new Date(v.checked_in_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</p>
+                                        )}
 
-                            {v.status === 'SCHEDULED' && (
-                                <div className="flex gap-2 mt-2 pt-2 border-t border-gray-100">
-                                    <button onClick={() => handleAction(v.id, 'checkin')}
-                                        className="flex-1 py-2 bg-green-600 text-white rounded-xl text-xs font-semibold">
-                                        ✅ Check In
-                                    </button>
-                                    <button onClick={() => handleAction(v.id, 'skip')}
-                                        className="flex-1 py-2 border border-red-200 text-red-600 rounded-xl text-xs font-semibold">
-                                        ⏭ Skip
-                                    </button>
-                                </div>
-                            )}
-                            {v.status === 'COMPLETED' && !v.checked_out_at && (
-                                <button onClick={() => handleAction(v.id, 'checkout')}
-                                    className="mt-2 w-full py-2 border border-gray-300 text-gray-600 rounded-xl text-xs font-semibold">
-                                    🚪 Check Out
-                                </button>
-                            )}
+                                        {v.status === 'SCHEDULED' && (
+                                            <div className="flex gap-2 mt-2 pt-2 border-t border-gray-100">
+                                                <button onClick={() => handleAction(v.id, 'checkin')}
+                                                    className="flex-1 py-1.5 bg-green-600 text-white rounded-lg text-xs font-semibold">
+                                                    ✅ Check In
+                                                </button>
+                                                <button onClick={() => handleAction(v.id, 'skip')}
+                                                    className="flex-1 py-1.5 border border-red-200 text-red-600 rounded-lg text-xs font-semibold">
+                                                    ⏭ Skip
+                                                </button>
+                                            </div>
+                                        )}
+                                        {v.status === 'COMPLETED' && !v.checked_out_at && (
+                                            <button onClick={() => handleAction(v.id, 'checkout')}
+                                                className="mt-2 w-full py-1.5 border border-gray-300 text-gray-600 rounded-lg text-xs font-semibold">
+                                                🚪 Check Out
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
-                    );
-                })}
+                    </div>
+                ))}
             </div>
             <BottomNav />
         </div>

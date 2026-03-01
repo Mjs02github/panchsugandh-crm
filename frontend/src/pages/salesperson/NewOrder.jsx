@@ -23,6 +23,14 @@ export default function NewOrder() {
         api.get('/products').then(r => setProducts(r.data));
     }, []);
 
+    const [selectedArea, setSelectedArea] = useState('');
+
+    // Derived values
+    const uniqueAreas = Array.from(new Set(retailers.map(r => r.area_name))).filter(Boolean).sort();
+    const filteredRetailers = selectedArea
+        ? retailers.filter(r => r.area_name === selectedArea)
+        : retailers;
+
     const addItem = () =>
         setForm(f => ({ ...f, items: [...f.items, { product_id: '', qty_ordered: 1, unit_price: '' }] }));
 
@@ -69,20 +77,34 @@ export default function NewOrder() {
         <div className="pb-24">
             <div className="page-header">
                 <button onClick={() => navigate(-1)} className="text-gray-500 text-xl">←</button>
-                <h1 className="text-lg font-semibold">New Sales Order</h1>
+                <h1 className="text-lg font-semibold flex-1">New Sales Order</h1>
             </div>
 
             <form onSubmit={handleSubmit} className="px-4 py-4 space-y-4">
                 {error && <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl">{error}</div>}
                 {success && <div className="p-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-xl">{success}</div>}
 
+                {/* Area Filter */}
+                <div className="flex gap-2">
+                    <div className="flex-1">
+                        <label className="label">Filter by Area</label>
+                        <select className="input" value={selectedArea} onChange={e => {
+                            setSelectedArea(e.target.value);
+                            setForm(f => ({ ...f, retailer_id: '' })); // Reset selected retailer when area changes
+                        }}>
+                            <option value="">All Areas</option>
+                            {uniqueAreas.map(a => <option key={a} value={a}>{a}</option>)}
+                        </select>
+                    </div>
+                </div>
+
                 {/* Retailer */}
                 <div>
                     <label className="label">Retailer / Party *</label>
                     <select className="input" value={form.retailer_id} onChange={e => setForm(f => ({ ...f, retailer_id: e.target.value }))} required>
                         <option value="">Select retailer…</option>
-                        {retailers.map(r => (
-                            <option key={r.id} value={r.id}>{r.firm_name} — {r.area_name || 'No area'}</option>
+                        {filteredRetailers.map(r => (
+                            <option key={r.id} value={r.id}>{r.firm_name} {!selectedArea ? `— ${r.area_name || 'No area'}` : ''}</option>
                         ))}
                     </select>
                 </div>
