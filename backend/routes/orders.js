@@ -77,17 +77,26 @@ router.get('/', auth, allowRoles(...ALL_ORDER_ROLES), async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────
-// GET /api/orders/:id  — order detail with items
+// GET /api/orders/:id  — order detail with items + payments
 // ─────────────────────────────────────────────────────────
 router.get('/:id', auth, allowRoles(...ALL_ORDER_ROLES), async (req, res) => {
     try {
         const [orders] = await db.query(
-            `SELECT so.*, r.firm_name AS retailer_name, r.phone AS retailer_phone,
-              a.name AS area_name, u.name AS salesperson_name
+            `SELECT so.*,
+              r.firm_name   AS retailer_name,
+              r.phone       AS retailer_phone,
+              r.address     AS retailer_address,
+              a.name        AS area_name,
+              sp.name       AS salesperson_name,
+              sp.phone      AS salesperson_phone,
+              bb.name       AS billed_by_name,
+              db2.name      AS delivered_by_name
        FROM sales_orders so
        JOIN retailers r ON so.retailer_id = r.id
        LEFT JOIN areas a ON r.area_id = a.id
-       JOIN users u ON so.salesperson_id = u.id
+       JOIN users sp ON so.salesperson_id = sp.id
+       LEFT JOIN users bb  ON so.billed_by    = bb.id
+       LEFT JOIN users db2 ON so.delivered_by = db2.id
        WHERE so.id = ?`,
             [req.params.id]
         );
@@ -101,11 +110,24 @@ router.get('/:id', auth, allowRoles(...ALL_ORDER_ROLES), async (req, res) => {
             [req.params.id]
         );
 
-        res.json({ ...orders[0], items });
+        const [payments] = await db.query(
+            `SELECT pc.*, u.name AS collected_by_name
+       FROM payment_collections pc
+       JOIN users u ON pc.collected_by = u.id
+       WHERE pc.order_id = ?
+       ORDER BY pc.collection_date ASC`,
+            [req.params.id]
+        );
+
+        const totalPaid = payments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+
+        res.json({ ...orders[0], items, payments, total_paid: totalPaid });
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: 'Server error.' });
     }
 });
+
 
 // ─────────────────────────────────────────────────────────
 // POST /api/orders — Create new sales order (Salesperson)

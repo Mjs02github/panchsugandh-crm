@@ -5,6 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 // Pages
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import OrderDetail from './pages/OrderDetail';
 
 // Salesperson
 import NewOrder from './pages/salesperson/NewOrder';
@@ -76,6 +77,7 @@ export default function App() {
           <Route path="/orders/new" element={
             <ProtectedRoute roles={['salesperson', 'admin', 'super_admin']}><NewOrder /></ProtectedRoute>
           } />
+          <Route path="/orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
           <Route path="/payments" element={
             <ProtectedRoute roles={['salesperson', 'admin', 'super_admin']}><PaymentEntry /></ProtectedRoute>
           } />
