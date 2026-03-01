@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 
@@ -30,9 +31,17 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
-// ── 404 handler ─────────────────────────────────────────────
-app.use((req, res) => {
-    res.status(404).json({ error: 'Route not found' });
+// ── Serve Frontend ────────────────────────────────────────────
+app.use(express.static(path.join(__dirname, 'dist')));
+
+// ── 404 handler for API routes ──────────────────────────────
+app.use('/api/*', (req, res) => {
+    res.status(404).json({ error: 'API Route not found' });
+});
+
+// ── Catch-all for React Router ──────────────────────────────
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 // ── Global error handler ─────────────────────────────────────
