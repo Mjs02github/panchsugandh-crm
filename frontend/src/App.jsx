@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard';
 import NewOrder from './pages/salesperson/NewOrder';
 import OrdersList from './pages/salesperson/OrdersList';
 import PaymentEntry from './pages/salesperson/PaymentEntry';
+import VisitScheduler from './pages/salesperson/VisitScheduler';
 
 // Bill Operator
 import BillingQueue from './pages/billoperator/BillingQueue';
@@ -17,17 +18,26 @@ import BillingQueue from './pages/billoperator/BillingQueue';
 // Delivery
 import DeliveryQueue from './pages/delivery/DeliveryQueue';
 
+// Store In-charge
+import RetailersList from './pages/storeincharge/RetailersList';
+import AreasList from './pages/storeincharge/AreasList';
+import ProductsList from './pages/storeincharge/ProductsList';
+
+// Sales Officer
+import TeamList from './pages/salesofficer/TeamList';
+
+// Admin
+import UserManagement from './pages/admin/UserManagement';
+
 function RoleRouter() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-
-  // Default landing per role
   const defaults = {
     salesperson: '/orders',
     bill_operator: '/billing',
     delivery_incharge: '/delivery',
-    store_incharge: '/dashboard',
-    sales_officer: '/dashboard',
+    store_incharge: '/store/retailers',
+    sales_officer: '/team',
     admin: '/dashboard',
     super_admin: '/dashboard',
   };
@@ -59,39 +69,49 @@ export default function App() {
           <Route path="/" element={<ProtectedRoute><RoleRouter /></ProtectedRoute>} />
 
           {/* Dashboard — all roles */}
-          <Route path="/dashboard" element={
-            <ProtectedRoute><Dashboard /></ProtectedRoute>
-          } />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
 
-          {/* Orders */}
-          <Route path="/orders" element={
-            <ProtectedRoute><OrdersList /></ProtectedRoute>
-          } />
+          {/* ── Salesperson ── */}
+          <Route path="/orders" element={<ProtectedRoute><OrdersList /></ProtectedRoute>} />
           <Route path="/orders/new" element={
-            <ProtectedRoute roles={['salesperson', 'admin', 'super_admin']}>
-              <NewOrder />
-            </ProtectedRoute>
+            <ProtectedRoute roles={['salesperson', 'admin', 'super_admin']}><NewOrder /></ProtectedRoute>
           } />
-
-          {/* Payments */}
           <Route path="/payments" element={
-            <ProtectedRoute roles={['salesperson', 'admin', 'super_admin']}>
-              <PaymentEntry />
-            </ProtectedRoute>
+            <ProtectedRoute roles={['salesperson', 'admin', 'super_admin']}><PaymentEntry /></ProtectedRoute>
+          } />
+          <Route path="/visits" element={
+            <ProtectedRoute roles={['salesperson', 'sales_officer', 'admin', 'super_admin']}><VisitScheduler /></ProtectedRoute>
           } />
 
-          {/* Billing */}
+          {/* ── Bill Operator ── */}
           <Route path="/billing" element={
-            <ProtectedRoute roles={['bill_operator', 'admin', 'super_admin']}>
-              <BillingQueue />
-            </ProtectedRoute>
+            <ProtectedRoute roles={['bill_operator', 'admin', 'super_admin']}><BillingQueue /></ProtectedRoute>
           } />
 
-          {/* Delivery */}
+          {/* ── Delivery In-charge ── */}
           <Route path="/delivery" element={
-            <ProtectedRoute roles={['delivery_incharge', 'admin', 'super_admin']}>
-              <DeliveryQueue />
-            </ProtectedRoute>
+            <ProtectedRoute roles={['delivery_incharge', 'admin', 'super_admin']}><DeliveryQueue /></ProtectedRoute>
+          } />
+
+          {/* ── Store In-charge ── */}
+          <Route path="/store/retailers" element={
+            <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin']}><RetailersList /></ProtectedRoute>
+          } />
+          <Route path="/store/areas" element={
+            <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin']}><AreasList /></ProtectedRoute>
+          } />
+          <Route path="/store/products" element={
+            <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin']}><ProductsList /></ProtectedRoute>
+          } />
+
+          {/* ── Sales Officer ── */}
+          <Route path="/team" element={
+            <ProtectedRoute roles={['sales_officer', 'admin', 'super_admin']}><TeamList /></ProtectedRoute>
+          } />
+
+          {/* ── Admin ── */}
+          <Route path="/admin/users" element={
+            <ProtectedRoute roles={['admin', 'super_admin']}><UserManagement /></ProtectedRoute>
           } />
 
           {/* Fallback */}
