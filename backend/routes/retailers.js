@@ -21,11 +21,8 @@ router.get('/', auth, async (req, res) => {
         }
         conditions.push('r.is_active = 1');
 
-        // Salesperson sees only retailers in their assigned areas
-        if (req.user.role === ROLES.SALESPERSON) {
-            conditions.push('r.area_id IN (SELECT area_id FROM user_areas WHERE user_id = ?)');
-            params.push(req.user.id);
-        }
+        // Removed: Salespersons used to see only retailers in their assigned areas. 
+        // We now let all roles see all active retailers to avoid missing party issues.
 
         const where = 'WHERE ' + conditions.join(' AND ');
         const offset = (parseInt(page) - 1) * parseInt(limit);
