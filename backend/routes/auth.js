@@ -46,7 +46,7 @@ router.post('/login', async (req, res) => {
             managerId: user.manager_id,
         };
 
-        const token = jwt.sign(payload, process.env.JWT_SECRET, {
+        const token = jwt.sign(payload, process.env.JWT_SECRET || 'panchsugandh_fallback_secret_123', {
             expiresIn: process.env.JWT_EXPIRES_IN || '8h',
         });
 
