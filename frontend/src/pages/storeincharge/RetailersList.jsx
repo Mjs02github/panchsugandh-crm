@@ -15,6 +15,8 @@ export default function RetailersList() {
     const [retailers, setRetailers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [filterState, setFilterState] = useState('');
+    const [filterDistrict, setFilterDistrict] = useState('');
     const [showForm, setShowForm] = useState(false);
     const [areas, setAreas] = useState([]);
     const [form, setForm] = useState({
@@ -24,8 +26,11 @@ export default function RetailersList() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-    const selectedStateObj = indiaStates.find(s => s.state === form.state);
-    const districtOptions = selectedStateObj ? selectedStateObj.districts : [];
+    const formStateObj = indiaStates.find(s => s.state === form.state);
+    const formDistrictOptions = formStateObj ? formStateObj.districts : [];
+
+    const filterStateObj = indiaStates.find(s => s.state === filterState);
+    const filterDistrictOptions = filterStateObj ? filterStateObj.districts : [];
 
     const load = (q = '') => {
         setLoading(true);
@@ -65,6 +70,12 @@ export default function RetailersList() {
         } finally { setSaving(false); }
     };
 
+    const filteredRetailers = retailers.filter(r => {
+        const matchesState = !filterState || (r.address || '').includes(filterState);
+        const matchesDistrict = !filterDistrict || (r.address || '').includes(filterDistrict);
+        return matchesState && matchesDistrict;
+    });
+
     return (
         <div className="pb-24">
             {/* Header */}
@@ -86,10 +97,20 @@ export default function RetailersList() {
                 </div>
             )}
 
-            {/* Search */}
-            <div className="px-4 pt-3 pb-2">
+            {/* Search and Filters */}
+            <div className="px-4 pt-3 pb-2 space-y-2">
                 <input type="search" className="input" placeholder="Search by name, owner, phone…"
                     value={search} onChange={e => setSearch(e.target.value)} />
+                <div className="grid grid-cols-2 gap-2">
+                    <select className="input text-sm" value={filterState} onChange={e => { setFilterState(e.target.value); setFilterDistrict(''); }}>
+                        <option value="">All States</option>
+                        {indiaStates.map(s => <option key={s.state} value={s.state}>{s.state}</option>)}
+                    </select>
+                    <select className="input text-sm" value={filterDistrict} onChange={e => setFilterDistrict(e.target.value)} disabled={!filterState}>
+                        <option value="">All Districts</option>
+                        {filterDistrictOptions.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                </div>
             </div>
 
             {/* ── Add Form ── */}
@@ -129,7 +150,7 @@ export default function RetailersList() {
                                 placeholder="Type new area or select..."
                                 onChange={e => setForm(f => ({ ...f, area_id: e.target.value }))} required />
                             <datalist id="areas-list">
-                                {areas.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                                {areas.map(a => <option key={a.id} value={a.name} />)}
                             </datalist>
                         </div>
                     </div>
@@ -148,7 +169,7 @@ export default function RetailersList() {
                             <select className="input" value={form.district}
                                 onChange={e => setForm(f => ({ ...f, district: e.target.value }))} required disabled={!form.state}>
                                 <option value="">Select District…</option>
-                                {districtOptions.map(d => <option key={d} value={d}>{d}</option>)}
+                                {formDistrictOptions.map(d => <option key={d} value={d}>{d}</option>)}
                             </select>
                         </div>
                     </div>
@@ -186,13 +207,13 @@ export default function RetailersList() {
                     <div className="flex justify-center py-10">
                         <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
                     </div>
-                ) : retailers.length === 0 ? (
+                ) : filteredRetailers.length === 0 ? (
                     <div className="text-center py-10 text-gray-400">
                         <div className="text-5xl mb-3">🏪</div>
                         <p>No parties found.</p>
                         <p className="text-xs mt-1">Tap "+ Add Party" to create one.</p>
                     </div>
-                ) : retailers.map(r => (
+                ) : filteredRetailers.map(r => (
                     <div key={r.id} className="card">
                         <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">

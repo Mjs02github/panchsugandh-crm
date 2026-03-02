@@ -80,6 +80,10 @@ router.post('/', auth, allowRoles(...CAN_ADD_RETAILER), async (req, res) => {
             } else {
                 const [newArea] = await db.query('INSERT INTO areas (name) VALUES (?)', [area_id.trim()]);
                 finalAreaId = newArea.insertId;
+                // If salesperson creates a new area, auto-assign it so they can see the party
+                if (req.user.role === ROLES.SALESPERSON) {
+                    await db.query('INSERT INTO user_areas (user_id, area_id) VALUES (?, ?)', [req.user.id, finalAreaId]);
+                }
             }
         }
 
