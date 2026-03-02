@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api';
 import BottomNav from '../../components/BottomNav';
+import indiaStates from '../../utils/indiaStates.json';
 
 const CAN_EDIT = ['store_incharge', 'admin', 'super_admin'];
 
@@ -18,11 +19,13 @@ export default function RetailersList() {
     const [areas, setAreas] = useState([]);
     const [form, setForm] = useState({
         firm_name: '', owner_name: '', phone: '', alt_phone: '',
-        address: '', area_id: '', gst_number: '', credit_limit: '',
+        address: '', state: '', district: '', area_id: '', gst_number: '', credit_limit: '',
     });
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const selectedStateObj = indiaStates.find(s => s.state === form.state);
+    const districtOptions = selectedStateObj ? selectedStateObj.districts : [];
 
     const load = (q = '') => {
         setLoading(true);
@@ -43,14 +46,15 @@ export default function RetailersList() {
 
     const resetForm = () => setForm({
         firm_name: '', owner_name: '', phone: '', alt_phone: '',
-        address: '', area_id: '', gst_number: '', credit_limit: '',
+        address: '', state: '', district: '', area_id: '', gst_number: '', credit_limit: '',
     });
 
     const handleSave = async (e) => {
         e.preventDefault();
         setError(''); setSaving(true);
         try {
-            await api.post('/retailers', form);
+            const payload = { ...form, address: [form.address, form.district, form.state].filter(Boolean).join(', ') };
+            await api.post('/retailers', payload);
             setSuccess('✅ Party added successfully!');
             setShowForm(false);
             resetForm();
@@ -120,17 +124,36 @@ export default function RetailersList() {
                                 onChange={e => setForm(f => ({ ...f, alt_phone: e.target.value }))} />
                         </div>
                         <div>
-                            <label className="label">Area</label>
+                            <label className="label">Area *</label>
                             <select className="input" value={form.area_id}
-                                onChange={e => setForm(f => ({ ...f, area_id: e.target.value }))}>
-                                <option value="">Select…</option>
+                                onChange={e => setForm(f => ({ ...f, area_id: e.target.value }))} required>
+                                <option value="">Select Area…</option>
                                 {areas.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                             </select>
                         </div>
                     </div>
 
+                    <div className="grid grid-cols-2 gap-2">
+                        <div>
+                            <label className="label">State *</label>
+                            <select className="input" value={form.state}
+                                onChange={e => setForm(f => ({ ...f, state: e.target.value, district: '' }))} required>
+                                <option value="">Select State…</option>
+                                {indiaStates.map(s => <option key={s.state} value={s.state}>{s.state}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="label">District *</label>
+                            <select className="input" value={form.district}
+                                onChange={e => setForm(f => ({ ...f, district: e.target.value }))} required disabled={!form.state}>
+                                <option value="">Select District…</option>
+                                {districtOptions.map(d => <option key={d} value={d}>{d}</option>)}
+                            </select>
+                        </div>
+                    </div>
+
                     <div>
-                        <label className="label">Address</label>
+                        <label className="label">Street Address</label>
                         <textarea className="input" rows="2" value={form.address}
                             onChange={e => setForm(f => ({ ...f, address: e.target.value }))} />
                     </div>

@@ -43,7 +43,7 @@ const NAV_CONFIG = {
 };
 
 export default function BottomNav() {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const navigate = useNavigate();
     const { pathname } = useLocation();
 
@@ -58,9 +58,13 @@ export default function BottomNav() {
                     onClick={() => navigate(item.path)}
                 >
                     <span className="text-xl leading-none">{item.icon}</span>
-                    <span>{item.label}</span>
+                    <span className="text-[10px] mt-0.5">{item.label}</span>
                 </button>
             ))}
+            <button className="nav-item text-red-500" onClick={logout}>
+                <span className="text-xl leading-none">🚪</span>
+                <span className="text-[10px] mt-0.5">Logout</span>
+            </button>
         </nav>
     );
 }
