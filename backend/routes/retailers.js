@@ -70,12 +70,25 @@ router.post('/', auth, allowRoles(...CAN_ADD_RETAILER), async (req, res) => {
         const { firm_name, owner_name, phone, alt_phone, email, address, area_id, gst_number, credit_limit } = req.body;
         if (!firm_name) return res.status(400).json({ error: 'firm_name is required.' });
 
+        let finalAreaId = area_id || null;
+
+        // If an area string was provided (NaN) instead of a numeric ID, create it automatically
+        if (area_id && isNaN(area_id)) {
+            const [existingArea] = await db.query('SELECT id FROM areas WHERE name = ? LIMIT 1', [area_id.trim()]);
+            if (existingArea.length) {
+                finalAreaId = existingArea[0].id;
+            } else {
+                const [newArea] = await db.query('INSERT INTO areas (name) VALUES (?)', [area_id.trim()]);
+                finalAreaId = newArea.insertId;
+            }
+        }
+
         const [result] = await db.query(
             `INSERT INTO retailers
          (firm_name, owner_name, phone, alt_phone, email, address, area_id, gst_number, credit_limit, created_by)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [firm_name, owner_name || null, phone || null, alt_phone || null, email || null,
-                address || null, area_id || null, gst_number || null, credit_limit || 0, req.user.id]
+                address || null, finalAreaId, gst_number || null, credit_limit || 0, req.user.id]
         );
         res.status(201).json({ id: result.insertId, message: 'Retailer created.' });
     } catch (err) {

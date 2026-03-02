@@ -23,13 +23,21 @@ export default function NewOrder() {
         api.get('/products').then(r => setProducts(r.data));
     }, []);
 
-    const [selectedArea, setSelectedArea] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Derived values
-    const uniqueAreas = Array.from(new Set(retailers.map(r => r.area_name))).filter(Boolean).sort();
-    const filteredRetailers = selectedArea
-        ? retailers.filter(r => r.area_name === selectedArea)
-        : retailers;
+    const filteredRetailers = retailers.filter(r =>
+        (r.firm_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (r.area_name || '').toLowerCase().includes(searchQuery.toLowerCase())
+    ).slice(0, 50); // Limit to 50 for performance
+
+    // Helper to extract ID from datalist selection format like "Firm Name (Area) - ID: 12"
+    const handleRetailerSelect = (val) => {
+        setSearchQuery(val);
+        const match = val.match(/- ID: (\d+)$/);
+        if (match) setForm(f => ({ ...f, retailer_id: match[1] }));
+        else setForm(f => ({ ...f, retailer_id: '' }));
+    };
 
     const addItem = () =>
         setForm(f => ({ ...f, items: [...f.items, { product_id: '', qty_ordered: 1, unit_price: '' }] }));
@@ -84,29 +92,21 @@ export default function NewOrder() {
                 {error && <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl">{error}</div>}
                 {success && <div className="p-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-xl">{success}</div>}
 
-                {/* Area Filter */}
-                <div className="flex gap-2">
-                    <div className="flex-1">
-                        <label className="label">Filter by Area</label>
-                        <select className="input" value={selectedArea} onChange={e => {
-                            setSelectedArea(e.target.value);
-                            setForm(f => ({ ...f, retailer_id: '' })); // Reset selected retailer when area changes
-                        }}>
-                            <option value="">All Areas</option>
-                            {uniqueAreas.map(a => <option key={a} value={a}>{a}</option>)}
-                        </select>
-                    </div>
-                </div>
-
-                {/* Retailer */}
-                <div>
-                    <label className="label">Retailer / Party *</label>
-                    <select className="input" value={form.retailer_id} onChange={e => setForm(f => ({ ...f, retailer_id: e.target.value }))} required>
-                        <option value="">Select retailer…</option>
+                {/* Retailer Search */}
+                <div className="card space-y-2">
+                    <label className="label">Search Party / Retailer *</label>
+                    <input className="input border-brand-200" list="retailers-list"
+                        placeholder="Type firm name or area..."
+                        value={searchQuery}
+                        onChange={e => handleRetailerSelect(e.target.value)} required />
+                    <datalist id="retailers-list">
                         {filteredRetailers.map(r => (
-                            <option key={r.id} value={r.id}>{r.firm_name} {!selectedArea ? `— ${r.area_name || 'No area'}` : ''}</option>
+                            <option key={r.id} value={`${r.firm_name} (${r.area_name || 'No area'}) - ID: ${r.id}`} />
                         ))}
-                    </select>
+                    </datalist>
+                    {searchQuery && !form.retailer_id && (
+                        <p className="text-xs text-brand-600">Please select a valid party from the dropdown list.</p>
+                    )}
                 </div>
 
                 {/* Date */}
