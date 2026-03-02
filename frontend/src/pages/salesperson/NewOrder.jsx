@@ -2,11 +2,17 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api';
 import BottomNav from '../../components/BottomNav';
+import indiaStates from '../../utils/indiaStates.json';
 
 export default function NewOrder() {
     const navigate = useNavigate();
     const [retailers, setRetailers] = useState([]);
     const [products, setProducts] = useState([]);
+    const [areas, setAreas] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedState, setSelectedState] = useState('');
+    const [selectedDistrict, setSelectedDistrict] = useState('');
+    const [selectedArea, setSelectedArea] = useState('');
     const [form, setForm] = useState({
         retailer_id: '',
         order_date: new Date().toISOString().slice(0, 10),
@@ -21,15 +27,21 @@ export default function NewOrder() {
     useEffect(() => {
         api.get('/retailers').then(r => setRetailers(r.data));
         api.get('/products').then(r => setProducts(r.data));
+        api.get('/areas').then(r => setAreas(r.data));
     }, []);
 
-    const [searchQuery, setSearchQuery] = useState('');
+    const selectedStateObj = indiaStates.find(s => s.state === selectedState);
+    const districtOptions = selectedStateObj ? selectedStateObj.districts : [];
 
     // Derived values
-    const filteredRetailers = retailers.filter(r =>
-        (r.firm_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (r.area_name || '').toLowerCase().includes(searchQuery.toLowerCase())
-    ).slice(0, 50); // Limit to 50 for performance
+    const filteredRetailers = retailers.filter(r => {
+        const matchesSearch = (r.firm_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (r.area_name || '').toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesState = !selectedState || (r.address || '').includes(selectedState);
+        const matchesDistrict = !selectedDistrict || (r.address || '').includes(selectedDistrict);
+        const matchesArea = !selectedArea || String(r.area_id) === String(selectedArea);
+        return matchesSearch && matchesState && matchesDistrict && matchesArea;
+    }).slice(0, 50); // Limit to 50 for performance
 
     // Helper to extract ID from datalist selection format like "Firm Name (Area) - ID: 12"
     const handleRetailerSelect = (val) => {
@@ -91,6 +103,25 @@ export default function NewOrder() {
             <form onSubmit={handleSubmit} className="px-4 py-4 space-y-4">
                 {error && <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl">{error}</div>}
                 {success && <div className="p-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-xl">{success}</div>}
+
+                {/* Location Filters */}
+                <div className="card space-y-2 mb-4">
+                    <label className="label">Filter by Location</label>
+                    <div className="grid grid-cols-2 gap-2">
+                        <select className="input" value={selectedState} onChange={e => { setSelectedState(e.target.value); setSelectedDistrict(''); }}>
+                            <option value="">All States</option>
+                            {indiaStates.map(s => <option key={s.state} value={s.state}>{s.state}</option>)}
+                        </select>
+                        <select className="input" value={selectedDistrict} onChange={e => setSelectedDistrict(e.target.value)} disabled={!selectedState}>
+                            <option value="">All Districts</option>
+                            {districtOptions.map(d => <option key={d} value={d}>{d}</option>)}
+                        </select>
+                        <select className="input col-span-2" value={selectedArea} onChange={e => setSelectedArea(e.target.value)}>
+                            <option value="">All Areas</option>
+                            {areas.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                        </select>
+                    </div>
+                </div>
 
                 {/* Retailer Search */}
                 <div className="card space-y-2">

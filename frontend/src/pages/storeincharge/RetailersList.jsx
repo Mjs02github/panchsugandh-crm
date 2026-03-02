@@ -124,12 +124,13 @@ export default function RetailersList() {
                                 onChange={e => setForm(f => ({ ...f, alt_phone: e.target.value }))} />
                         </div>
                         <div>
-                            <label className="label">Area *</label>
-                            <select className="input" value={form.area_id}
-                                onChange={e => setForm(f => ({ ...f, area_id: e.target.value }))} required>
-                                <option value="">Select Area…</option>
+                            <label className="label">Area / Location *</label>
+                            <input className="input" list="areas-list" value={form.area_id}
+                                placeholder="Type new area or select..."
+                                onChange={e => setForm(f => ({ ...f, area_id: e.target.value }))} required />
+                            <datalist id="areas-list">
                                 {areas.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                            </select>
+                            </datalist>
                         </div>
                     </div>
 
