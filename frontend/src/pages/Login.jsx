@@ -34,66 +34,93 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-brand-600 to-brand-800 flex flex-col justify-center px-6 py-12">
-            {/* Logo area */}
-            <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl shadow-xl mb-4">
-                    <span className="text-3xl">🪔</span>
+        <div className="min-h-screen bg-gray-50 flex flex-col justify-between font-sans">
+
+            {/* --- CUSTOM HEADER --- */}
+            <div className="bg-white shadow-md rounded-b-3xl px-6 py-5 flex items-center gap-4 z-10">
+                {/* Space for company logo */}
+                <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 shrink-0">
+                    <span className="text-[10px] text-gray-500 font-bold text-center leading-tight">LOGO<br />SPACE</span>
                 </div>
-                <h1 className="text-2xl font-bold text-white">Panchsugandh CRM</h1>
-                <p className="text-brand-200 text-sm mt-1">Field Operations Platform</p>
+                <div className="flex flex-col">
+                    <h1 className="text-2xl font-black text-gray-900 tracking-tight">Sjd Developer</h1>
+                    <h2 className="text-lg font-bold text-red-600">Panchsugandh</h2>
+                </div>
             </div>
 
-            {/* Card */}
-            <div className="bg-white rounded-3xl shadow-2xl p-6">
-                <h2 className="text-xl font-semibold text-gray-800 mb-6">Welcome back</h2>
+            {/* --- LOGIN FORM --- */}
+            <div className="flex-1 flex flex-col justify-center px-6 py-8">
+                <div className="bg-white rounded-3xl shadow-xl p-7 border border-gray-100">
+                    <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                        <span>👋</span> Welcome back
+                    </h2>
 
-                {error && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl">
-                        {error}
-                    </div>
-                )}
+                    {error && (
+                        <div className="mb-5 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl font-medium">
+                            {error}
+                        </div>
+                    )}
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="label">Email Address</label>
-                        <input
-                            type="email"
-                            className="input"
-                            placeholder="you@example.com"
-                            value={form.email}
-                            onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                            required
-                        />
-                    </div>
-                    <div>
-                        <label className="label">Password</label>
-                        <input
-                            type="password"
-                            className="input"
-                            placeholder="••••••••"
-                            value={form.password}
-                            onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                            required
-                        />
-                    </div>
-                    <button type="submit" className="btn-primary mt-2" disabled={loading}>
-                        {loading ? (
-                            <span className="flex items-center justify-center gap-2">
-                                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                                </svg>
-                                Signing in...
-                            </span>
-                        ) : 'Sign In'}
-                    </button>
-                </form>
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email Address</label>
+                            <input
+                                type="email"
+                                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all bg-gray-50 focus:bg-white"
+                                placeholder="you@example.com"
+                                value={form.email}
+                                onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Password</label>
+                            <input
+                                type="password"
+                                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all bg-gray-50 focus:bg-white"
+                                placeholder="••••••••"
+                                value={form.password}
+                                onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                                required
+                            />
+                        </div>
+                        <button type="submit" className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-brand-500/30 transition-all mt-2" disabled={loading}>
+                            {loading ? (
+                                <span className="flex items-center justify-center gap-2">
+                                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                    </svg>
+                                    Signing in...
+                                </span>
+                            ) : 'Secure Login'}
+                        </button>
+                    </form>
+                </div>
             </div>
 
-            <p className="text-center text-brand-200 text-xs mt-6">
-                Contact your admin if you've forgotten your credentials.
-            </p>
+            {/* --- CUSTOM FOOTER PRODUCT SPACES --- */}
+            <div className="bg-white rounded-t-3xl shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] pt-6 pb-8 px-6 mt-auto">
+                <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4 text-center">Featured Products</h3>
+                <div className="flex justify-between items-center gap-3">
+                    {/* Product 1 */}
+                    <div className="flex-1 aspect-[4/5] bg-gray-50 rounded-2xl flex flex-col items-center justify-center border-2 border-dashed border-gray-200">
+                        <span className="text-2xl mb-2 opacity-50">🖼️</span>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase">Product 1</span>
+                    </div>
+                    {/* Product 2 */}
+                    <div className="flex-1 aspect-[4/5] bg-gray-50 rounded-2xl flex flex-col items-center justify-center border-2 border-dashed border-gray-200">
+                        <span className="text-2xl mb-2 opacity-50">🖼️</span>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase">Product 2</span>
+                    </div>
+                    {/* Product 3 */}
+                    <div className="flex-1 aspect-[4/5] bg-gray-50 rounded-2xl flex flex-col items-center justify-center border-2 border-dashed border-gray-200">
+                        <span className="text-2xl mb-2 opacity-50">🖼️</span>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase">Product 3</span>
+                    </div>
+                </div>
+            </div>
+
         </div>
     );
 }

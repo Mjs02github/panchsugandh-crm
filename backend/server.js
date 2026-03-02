@@ -15,7 +15,7 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: function (origin, callback) {
-        if (!origin || allowedOrigins.includes(origin) || process.env.FRONTEND_URL === origin) {
+        if (!origin || allowedOrigins.includes(origin) || process.env.FRONTEND_URL === origin || (origin && origin.startsWith('http://localhost:'))) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
