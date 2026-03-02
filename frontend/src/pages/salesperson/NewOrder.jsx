@@ -25,7 +25,7 @@ export default function NewOrder() {
     const [success, setSuccess] = useState('');
 
     useEffect(() => {
-        api.get('/retailers').then(r => setRetailers(r.data));
+        api.get('/retailers?limit=1000').then(r => setRetailers(r.data));
         api.get('/products').then(r => setProducts(r.data));
         api.get('/areas').then(r => setAreas(r.data));
     }, []);
@@ -41,15 +41,7 @@ export default function NewOrder() {
         const matchesDistrict = !selectedDistrict || (r.address || '').includes(selectedDistrict);
         const matchesArea = !selectedArea || String(r.area_id) === String(selectedArea);
         return matchesSearch && matchesState && matchesDistrict && matchesArea;
-    }).slice(0, 50); // Limit to 50 for performance
-
-    // Helper to extract ID from datalist selection format like "Firm Name (Area) - ID: 12"
-    const handleRetailerSelect = (val) => {
-        setSearchQuery(val);
-        const match = val.match(/- ID: (\d+)$/);
-        if (match) setForm(f => ({ ...f, retailer_id: match[1] }));
-        else setForm(f => ({ ...f, retailer_id: '' }));
-    };
+    });
 
     const addItem = () =>
         setForm(f => ({ ...f, items: [...f.items, { product_id: '', qty_ordered: 1, unit_price: '' }] }));
@@ -125,19 +117,22 @@ export default function NewOrder() {
 
                 {/* Retailer Search */}
                 <div className="card space-y-2">
-                    <label className="label">Search Party / Retailer *</label>
-                    <input className="input border-brand-200" list="retailers-list"
-                        placeholder="Type firm name or area..."
+                    <label className="label">Select Party / Retailer *</label>
+                    <input type="search" className="input mb-2 border-brand-200"
+                        placeholder="Search by name or area..."
                         value={searchQuery}
-                        onChange={e => handleRetailerSelect(e.target.value)} required />
-                    <datalist id="retailers-list">
+                        onChange={e => setSearchQuery(e.target.value)} />
+
+                    <select className="input border-brand-200"
+                        value={form.retailer_id}
+                        onChange={e => setForm(f => ({ ...f, retailer_id: e.target.value }))} required>
+                        <option value="">Select party from list…</option>
                         {filteredRetailers.map(r => (
-                            <option key={r.id} value={`${r.firm_name} (${r.area_name || 'No area'}) - ID: ${r.id}`} />
+                            <option key={r.id} value={r.id}>
+                                {r.firm_name} ({r.area_name || 'No area'})
+                            </option>
                         ))}
-                    </datalist>
-                    {searchQuery && !form.retailer_id && (
-                        <p className="text-xs text-brand-600">Please select a valid party from the dropdown list.</p>
-                    )}
+                    </select>
                 </div>
 
                 {/* Date */}

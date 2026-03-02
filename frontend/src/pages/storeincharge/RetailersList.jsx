@@ -21,7 +21,7 @@ export default function RetailersList() {
     const [areas, setAreas] = useState([]);
     const [form, setForm] = useState({
         firm_name: '', owner_name: '', phone: '', alt_phone: '',
-        address: '', state: '', district: '', area_id: '', gst_number: '', credit_limit: '',
+        address: '', state: '', district: '', area_id: '', is_new_area: false, gst_number: '', credit_limit: '',
     });
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
@@ -51,7 +51,7 @@ export default function RetailersList() {
 
     const resetForm = () => setForm({
         firm_name: '', owner_name: '', phone: '', alt_phone: '',
-        address: '', state: '', district: '', area_id: '', gst_number: '', credit_limit: '',
+        address: '', state: '', district: '', area_id: '', is_new_area: false, gst_number: '', credit_limit: '',
     });
 
     const handleSave = async (e) => {
@@ -59,6 +59,7 @@ export default function RetailersList() {
         setError(''); setSaving(true);
         try {
             const payload = { ...form, address: [form.address, form.district, form.state].filter(Boolean).join(', ') };
+            delete payload.is_new_area;
             await api.post('/retailers', payload);
             setSuccess('✅ Party added successfully!');
             setShowForm(false);
@@ -146,12 +147,25 @@ export default function RetailersList() {
                         </div>
                         <div>
                             <label className="label">Area / Location *</label>
-                            <input className="input" list="areas-list" value={form.area_id}
-                                placeholder="Type new area or select..."
-                                onChange={e => setForm(f => ({ ...f, area_id: e.target.value }))} required />
-                            <datalist id="areas-list">
-                                {areas.map(a => <option key={a.id} value={a.name} />)}
-                            </datalist>
+                            {form.is_new_area ? (
+                                <div className="flex gap-2">
+                                    <input className="input flex-1" value={form.area_id}
+                                        placeholder="Enter new area name..."
+                                        onChange={e => setForm(f => ({ ...f, area_id: e.target.value }))} required autoFocus />
+                                    <button type="button" onClick={() => setForm(f => ({ ...f, is_new_area: false, area_id: '' }))}
+                                        className="text-gray-500 px-2 text-xl font-bold">✕</button>
+                                </div>
+                            ) : (
+                                <select className="input" value={form.area_id}
+                                    onChange={e => {
+                                        if (e.target.value === '__NEW__') setForm(f => ({ ...f, is_new_area: true, area_id: '' }));
+                                        else setForm(f => ({ ...f, area_id: e.target.value }));
+                                    }} required>
+                                    <option value="">Select Area…</option>
+                                    {areas.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                                    <option value="__NEW__" className="font-bold text-brand-600">+ Add New Area</option>
+                                </select>
+                            )}
                         </div>
                     </div>
 
