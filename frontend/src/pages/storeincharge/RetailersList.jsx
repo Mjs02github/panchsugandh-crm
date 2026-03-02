@@ -72,8 +72,9 @@ export default function RetailersList() {
     };
 
     const filteredRetailers = retailers.filter(r => {
-        const matchesState = !filterState || (r.address || '').includes(filterState);
-        const matchesDistrict = !filterDistrict || (r.address || '').includes(filterDistrict);
+        const addressLower = (r.address || '').toLowerCase();
+        const matchesState = !filterState || addressLower.includes(filterState.toLowerCase());
+        const matchesDistrict = !filterDistrict || addressLower.includes(filterDistrict.toLowerCase());
         return matchesState && matchesDistrict;
     });
 
