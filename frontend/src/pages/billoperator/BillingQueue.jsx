@@ -8,7 +8,9 @@ export default function BillingQueue() {
     const [billNum, setBillNum] = useState('');
     const [billDate, setBillDate] = useState(new Date().toISOString().slice(0, 10));
     const [finalAmount, setFinalAmount] = useState('');
+    const [orderItems, setOrderItems] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadingDetails, setLoadingDetails] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
@@ -22,6 +24,25 @@ export default function BillingQueue() {
 
     useEffect(() => { load(); }, []);
 
+    const handleSelectOrder = async (order) => {
+        setSelected(order.id);
+        setSuccess('');
+        setError('');
+        setFinalAmount(order.total_amount);
+        setBillNum('');
+        setOrderItems([]);
+
+        setLoadingDetails(true);
+        try {
+            const res = await api.get(`/orders/${order.id}`);
+            setOrderItems(res.data.items || []);
+        } catch (err) {
+            setError('Failed to load order items.');
+        } finally {
+            setLoadingDetails(false);
+        }
+    };
+
     const handleBill = async (orderId) => {
         if (!billNum.trim()) return setError('Bill number is required.');
         setSubmitting(true);
@@ -31,6 +52,7 @@ export default function BillingQueue() {
             setSuccess('Order marked as BILLED!');
             setSelected(null);
             setBillNum('');
+            setOrderItems([]);
             load();
         } catch (err) {
             setError(err.response?.data?.error || 'Failed to update.');
@@ -74,6 +96,31 @@ export default function BillingQueue() {
 
                         {selected === o.id ? (
                             <div className="mt-3 space-y-3 border-t border-gray-100 pt-3">
+                                {/* Ordered Items Display */}
+                                <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
+                                    <h3 className="text-xs font-bold text-gray-700 mb-2">Ordered Items</h3>
+                                    {loadingDetails ? (
+                                        <p className="text-xs text-gray-400">Loading items...</p>
+                                    ) : orderItems.length > 0 ? (
+                                        <div className="space-y-1.5">
+                                            {orderItems.map((item, i) => (
+                                                <div key={i} className="flex justify-between text-xs">
+                                                    <span className="text-gray-800 flex-1 truncate pr-2">
+                                                        {item.qty_ordered}x {item.product_name}
+                                                    </span>
+                                                    <span className="text-gray-600 font-medium">₹{parseFloat(item.line_amount).toLocaleString('en-IN')}</span>
+                                                </div>
+                                            ))}
+                                            <div className="flex justify-between text-xs font-bold text-gray-800 pt-1.5 border-t border-gray-200 mt-1.5">
+                                                <span>Total</span>
+                                                <span>₹{parseFloat(o.total_amount).toLocaleString('en-IN')}</span>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-red-500">Failed to load items or no items found.</p>
+                                    )}
+                                </div>
+
                                 <div>
                                     <label className="label text-xs">Final Billed Amount (₹) *</label>
                                     <input type="number" step="0.01" className="input font-bold text-brand-700" value={finalAmount}
@@ -91,8 +138,8 @@ export default function BillingQueue() {
                                         onChange={e => setBillDate(e.target.value)} />
                                 </div>
                                 <div className="flex gap-2">
-                                    <button onClick={() => handleBill(o.id)} disabled={submitting}
-                                        className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold">
+                                    <button onClick={() => handleBill(o.id)} disabled={submitting || loadingDetails}
+                                        className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold disabled:opacity-50">
                                         {submitting ? 'Saving…' : '✅ Confirm Bill'}
                                     </button>
                                     <button onClick={() => setSelected(null)}
@@ -102,7 +149,7 @@ export default function BillingQueue() {
                                 </div>
                             </div>
                         ) : (
-                            <button onClick={() => { setSelected(o.id); setSuccess(''); setError(''); setFinalAmount(o.total_amount); setBillNum(''); }}
+                            <button onClick={() => handleSelectOrder(o)}
                                 className="mt-2 w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold">
                                 Mark as Billed
                             </button>
