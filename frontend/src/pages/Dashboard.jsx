@@ -130,21 +130,7 @@ export default function Dashboard() {
 
     return (
         <div className="pb-24">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-brand-600 to-brand-700 px-4 pt-8 pb-6">
-                <div className="flex items-center justify-between mb-1">
-                    <div>
-                        <p className="text-brand-200 text-xs">{ROLE_LABELS[user?.role]}</p>
-                        <h1 className="text-white text-xl font-bold">Hello, {user?.name?.split(' ')[0]} 👋</h1>
-                        <p className="text-brand-200 text-xs mt-0.5">{today}</p>
-                    </div>
-                    <button onClick={logout} className="text-white/80 hover:text-white text-sm px-3 py-1 border border-white/30 rounded-xl">
-                        Logout
-                    </button>
-                </div>
-            </div>
-
-            <div className="px-4 -mt-2 pt-4 space-y-4">
+            <div className="px-4 py-4 space-y-4">
                 <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Overview</h2>
                 {renderStats()}
             </div>

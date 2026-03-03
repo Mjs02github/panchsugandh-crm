@@ -73,11 +73,15 @@ export default function App() {
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
 
           {/* ── Salesperson ── */}
-          <Route path="/orders" element={<ProtectedRoute><OrdersList /></ProtectedRoute>} />
+          <Route path="/orders" element={
+            <ProtectedRoute roles={['salesperson', 'sales_officer', 'store_incharge', 'delivery_incharge', 'admin', 'super_admin']}><OrdersList /></ProtectedRoute>
+          } />
           <Route path="/orders/new" element={
             <ProtectedRoute roles={['salesperson', 'admin', 'super_admin']}><NewOrder /></ProtectedRoute>
           } />
-          <Route path="/orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
+          <Route path="/orders/:id" element={
+            <ProtectedRoute roles={['salesperson', 'sales_officer', 'bill_operator', 'delivery_incharge', 'store_incharge', 'admin', 'super_admin']}><OrderDetail /></ProtectedRoute>
+          } />
           <Route path="/payments" element={
             <ProtectedRoute roles={['salesperson', 'admin', 'super_admin']}><PaymentEntry /></ProtectedRoute>
           } />

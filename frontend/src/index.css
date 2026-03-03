@@ -115,7 +115,8 @@
 
   .page-header {
     position: sticky;
-    top: 0;
+    top: 56px;
+    /* Offset for the new global Header */
     z-index: 30;
     background-color: white;
     border-bottom: 1px solid #e5e7eb;

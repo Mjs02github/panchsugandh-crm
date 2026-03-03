@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../../api';
 import BottomNav from '../../components/BottomNav';
 
@@ -82,9 +83,10 @@ export default function DeliveryQueue() {
                                 <p className="text-xs text-gray-500">{o.area_name}</p>
                                 <p className="text-xs text-gray-400 mt-0.5">{o.retailer_address}</p>
                             </div>
-                            <div className="text-right">
+                            <div className="text-right flex flex-col items-end">
                                 <p className="font-bold text-brand-700 text-sm">₹{parseFloat(o.total_amount).toLocaleString('en-IN')}</p>
                                 <p className="text-xs text-gray-400">{o.bill_number}</p>
+                                <Link to={`/orders/${o.id}`} className="text-xs text-brand-600 font-medium underline mt-1">View Details</Link>
                             </div>
                         </div>
                         <div className="text-xs text-gray-500 flex items-center gap-2 mt-1 mb-2">

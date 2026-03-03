@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../../api';
 import BottomNav from '../../components/BottomNav';
 
@@ -89,9 +90,12 @@ export default function BillingQueue() {
                             <div>
                                 <p className="font-semibold text-gray-800">{o.retailer_name}</p>
                                 <p className="text-xs text-gray-500">{o.area_name} • {o.salesperson_name}</p>
-                                <p className="text-xs font-mono text-gray-400">{o.order_number} • {o.order_date}</p>
+                                <p className="text-xs font-mono text-gray-400 mt-0.5">{o.order_number} • {o.order_date}</p>
                             </div>
-                            <p className="font-bold text-brand-700">₹{parseFloat(o.total_amount).toLocaleString('en-IN')}</p>
+                            <div className="text-right flex flex-col items-end">
+                                <p className="font-bold text-brand-700">₹{parseFloat(o.total_amount).toLocaleString('en-IN')}</p>
+                                <Link to={`/orders/${o.id}`} className="text-xs text-brand-600 font-medium underline mt-1 whitespace-nowrap">View Details</Link>
+                            </div>
                         </div>
 
                         {selected === o.id ? (

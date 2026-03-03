@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import api from '../../api';
 import BottomNav from '../../components/BottomNav';
 
@@ -15,9 +16,12 @@ function StatusBadge({ status }) {
 
 export default function OrdersList() {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('');
+
+    const isSalesperson = user?.role === 'salesperson';
 
     const load = (status = '') => {
         setLoading(true);
@@ -32,7 +36,7 @@ export default function OrdersList() {
     return (
         <div className="pb-24">
             <div className="page-header">
-                <h1 className="text-lg font-semibold flex-1">My Orders</h1>
+                <h1 className="text-lg font-semibold flex-1">{isSalesperson ? 'My Orders' : 'All Orders'}</h1>
                 <select className="text-sm border border-gray-200 rounded-lg px-2 py-1 text-gray-600"
                     value={filter} onChange={e => setFilter(e.target.value)}>
                     <option value="">All Status</option>
@@ -61,12 +65,16 @@ export default function OrdersList() {
                             </div>
                             <StatusBadge status={o.status} />
                         </div>
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-end justify-between mt-2">
                             <div>
                                 <p className="text-xs text-gray-500 font-mono">{o.order_number}</p>
                                 <p className="text-xs text-gray-400">{o.order_date}</p>
+                                {!isSalesperson && <p className="text-[10px] text-gray-400 mt-0.5">By {o.salesperson_name}</p>}
                             </div>
-                            <p className="text-lg font-bold text-brand-700">₹{parseFloat(o.total_amount).toLocaleString('en-IN')}</p>
+                            <div className="text-right flex flex-col items-end">
+                                <p className="text-lg font-bold text-brand-700 leading-none">₹{parseFloat(o.total_amount).toLocaleString('en-IN')}</p>
+                                <Link to={`/orders/${o.id}`} className="text-xs text-brand-600 font-medium underline mt-1" onClick={e => e.stopPropagation()}>View Details</Link>
+                            </div>
                         </div>
                     </div>
                 ))}
