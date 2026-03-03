@@ -38,10 +38,19 @@ export default function NewOrder() {
         const matchesSearch = (r.firm_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
             (r.area_name || '').toLowerCase().includes(searchQuery.toLowerCase());
         const addressLower = (r.address || '').toLowerCase();
-        const matchesState = !selectedState || addressLower.includes(selectedState.toLowerCase());
-        const matchesDistrict = !selectedDistrict || addressLower.includes(selectedDistrict.toLowerCase());
-        const matchesArea = !selectedArea || String(r.area_id) === String(selectedArea);
-        return matchesSearch && matchesState && matchesDistrict && matchesArea;
+
+        // Hierarchical filtering: Area is most specific. If selected, ignore strict State/District string matching
+        // which could fail if the old retailer doesn't have district/state saved in their address string.
+        let matchesLoc = true;
+        if (selectedArea) {
+            matchesLoc = String(r.area_id) === String(selectedArea);
+        } else if (selectedDistrict) {
+            matchesLoc = !r.address || addressLower.includes(selectedDistrict.toLowerCase());
+        } else if (selectedState) {
+            matchesLoc = !r.address || addressLower.includes(selectedState.toLowerCase());
+        }
+
+        return matchesSearch && matchesLoc;
     }).slice(0, 50); // Limit to 50 for performance
 
     // Helper to extract ID from datalist selection format like "Firm Name (Area) - ID: 12"
