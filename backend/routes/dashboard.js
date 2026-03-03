@@ -21,6 +21,7 @@ router.get('/stats', auth, async (req, res) => {
            SUM(total_amount)                                    AS total_revenue,
            SUM(CASE WHEN status='PENDING'   THEN 1 ELSE 0 END) AS pending,
            SUM(CASE WHEN status='BILLED'    THEN 1 ELSE 0 END) AS billed,
+           SUM(CASE WHEN status='READY_TO_SHIP' THEN 1 ELSE 0 END) AS ready_to_ship,
            SUM(CASE WHEN status='DELIVERED' THEN 1 ELSE 0 END) AS delivered,
            SUM(CASE WHEN order_date=?       THEN 1 ELSE 0 END) AS today_orders,
            SUM(CASE WHEN order_date=? THEN total_amount ELSE 0 END) AS today_revenue,
@@ -83,7 +84,7 @@ router.get('/stats', auth, async (req, res) => {
 
         } else if (role === ROLES.DELIVERY_INCHARGE) {
             const [[data]] = await db.query(
-                `SELECT COUNT(*) AS pending_delivery FROM sales_orders WHERE status='BILLED'`
+                `SELECT COUNT(*) AS pending_delivery FROM sales_orders WHERE status='READY_TO_SHIP'`
             );
             stats = data;
 
@@ -92,7 +93,10 @@ router.get('/stats', auth, async (req, res) => {
             const [[lowStock]] = await db.query(
                 'SELECT COUNT(*) AS low_stock_products FROM inventory WHERE qty_on_hand < 10'
             );
-            stats = { ...retailers, ...lowStock };
+            const [[pendingPacking]] = await db.query(
+                `SELECT COUNT(*) AS pending_packing FROM sales_orders WHERE status='BILLED'`
+            );
+            stats = { ...retailers, ...lowStock, ...pendingPacking };
         }
 
         res.json({ role, stats });

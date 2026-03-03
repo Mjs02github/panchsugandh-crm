@@ -23,6 +23,7 @@ import DeliveryQueue from './pages/delivery/DeliveryQueue';
 import RetailersList from './pages/storeincharge/RetailersList';
 import AreasList from './pages/storeincharge/AreasList';
 import ProductsList from './pages/storeincharge/ProductsList';
+import StoreOrdersQueue from './pages/storeincharge/StoreOrdersQueue';
 
 // Sales Officer
 import TeamList from './pages/salesofficer/TeamList';
@@ -37,7 +38,7 @@ function RoleRouter() {
     salesperson: '/orders',
     bill_operator: '/billing',
     delivery_incharge: '/delivery',
-    store_incharge: '/store/retailers',
+    store_incharge: '/store/orders',
     sales_officer: '/team',
     admin: '/dashboard',
     super_admin: '/dashboard',
@@ -100,6 +101,9 @@ export default function App() {
           } />
 
           {/* ── Store In-charge ── */}
+          <Route path="/store/orders" element={
+            <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin']}><StoreOrdersQueue /></ProtectedRoute>
+          } />
           <Route path="/store/retailers" element={
             <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin', 'salesperson', 'bill_operator']}><RetailersList /></ProtectedRoute>
           } />

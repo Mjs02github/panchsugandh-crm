@@ -19,6 +19,7 @@ const NAV_CONFIG = {
         { label: 'Done', icon: '✅', path: '/delivery/history' },
     ],
     store_incharge: [
+        { label: 'Orders', icon: '📋', path: '/store/orders' },
         { label: 'Retailers', icon: '🏪', path: '/store/retailers' },
         { label: 'Areas', icon: '📍', path: '/store/areas' },
         { label: 'Products', icon: '📦', path: '/store/products' },

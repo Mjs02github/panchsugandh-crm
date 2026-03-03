@@ -13,7 +13,7 @@ const { allowRoles, ROLES } = require('../middleware/rbac');
 router.get('/', auth, allowRoles(ROLES.DELIVERY_INCHARGE, ROLES.ADMIN, ROLES.SUPER_ADMIN), async (req, res) => {
     try {
         const { area_id, date, page = 1, limit = 30 } = req.query;
-        let conditions = ["so.status = 'BILLED'"];
+        let conditions = ["so.status = 'READY_TO_SHIP'"];
         let params = [];
 
         if (area_id) { conditions.push('r.area_id = ?'); params.push(area_id); }

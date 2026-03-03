@@ -41,8 +41,10 @@ router.get('/', auth, allowRoles(...ALL_ORDER_ROLES), async (req, res) => {
             params.push(userId);
         } else if (role === ROLES.BILL_OPERATOR) {
             conditions.push("so.status IN ('PENDING','BILLED')");
+        } else if (role === ROLES.STORE_INCHARGE) {
+            conditions.push("so.status IN ('BILLED','READY_TO_SHIP')");
         } else if (role === ROLES.DELIVERY_INCHARGE) {
-            conditions.push("so.status IN ('BILLED','DELIVERED')");
+            conditions.push("so.status IN ('READY_TO_SHIP','DELIVERED')");
         }
         // admin / super_admin see everything → no extra filter
 
@@ -397,6 +399,43 @@ router.patch('/:id/cancel', auth, allowRoles(ROLES.ADMIN, ROLES.SUPER_ADMIN), as
         res.json({ message: 'Order cancelled.' });
     } catch (err) {
         res.status(500).json({ error: 'Server error.' });
+    }
+});
+
+
+
+// PATCH /api/orders/:id/ready_to_ship - Store Incharge marks ready to ship
+router.patch('/:id/ready_to_ship', auth, allowRoles(ROLES.STORE_INCHARGE, ROLES.ADMIN, ROLES.SUPER_ADMIN), async (req, res) => {
+    const conn = await db.getConnection();
+    try {
+        await conn.beginTransaction();
+        const [orders] = await conn.query(
+            "SELECT * FROM sales_orders WHERE id = ? AND status = 'BILLED'",
+            [req.params.id]
+        );
+        if (!orders.length) {
+            await conn.rollback();
+            return res.status(404).json({ error: 'Order not found or not in BILLED status.' });
+        }
+
+        await conn.query(
+            "UPDATE sales_orders SET status = 'READY_TO_SHIP' WHERE id = ?",
+            [req.params.id]
+        );
+
+        await conn.query(
+            "INSERT INTO audit_log (user_id, action, entity_type, entity_id, new_value) VALUES (?, 'READY_TO_SHIP', 'order', ?, ?)",
+            [req.user.id, req.params.id, '{"ready":true}']
+        );
+
+        await conn.commit();
+        res.json({ message: 'Order marked as READY_TO_SHIP successfully.' });
+    } catch (err) {
+        await conn.rollback();
+        console.error('Ready to ship error:', err);
+        res.status(500).json({ error: 'Failed to update ready to ship status.' });
+    } finally {
+        conn.release();
     }
 });
 

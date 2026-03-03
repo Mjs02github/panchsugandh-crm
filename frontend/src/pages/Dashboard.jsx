@@ -63,7 +63,8 @@ export default function Dashboard() {
                 <StatCard label="Today Revenue" value={`₹${(stats.today_revenue || 0).toLocaleString('en-IN')}`} icon="💰" color="green" />
                 <StatCard label="MTD Revenue" value={`₹${(stats.mtd_revenue || 0).toLocaleString('en-IN')}`} icon="📈" color="blue" />
                 <StatCard label="Pending Bills" value={stats.pending} icon="🟡" color="yellow" />
-                <StatCard label="Billed" value={stats.billed} icon="🔵" color="purple" />
+                <StatCard label="Billed" value={stats.billed} icon="📦" color="purple" />
+                <StatCard label="Ready to Ship" value={stats.ready_to_ship} icon="🚚" color="blue" />
                 <StatCard label="Delivered" value={stats.delivered} icon="✅" color="green" />
                 <StatCard label="Total Retailers" value={stats.total_retailers} icon="🏪" color="brand" />
                 <StatCard label="Active Users" value={stats.total_users} icon="👥" color="blue" />
@@ -111,7 +112,12 @@ export default function Dashboard() {
         if (role === 'store_incharge') return (
             <div className="grid grid-cols-2 gap-3">
                 <StatCard label="Total Retailers" value={stats.total_retailers} icon="🏪" color="brand" />
-                <StatCard label="Low Stock Items" value={stats.low_stock_products} icon="⚠️" color="red" />
+                <div className="col-span-1">
+                    <StatCard label="Awaiting Packing" value={stats.pending_packing} icon="📦" color="yellow" />
+                </div>
+                <div className="col-span-2">
+                    <StatCard label="Low Stock Items" value={stats.low_stock_products} icon="⚠️" color="red" />
+                </div>
             </div>
         );
 
