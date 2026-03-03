@@ -29,7 +29,7 @@ router.get('/', auth, async (req, res) => {
 
         const [rows] = await db.query(
             `SELECT r.id, r.firm_name, r.owner_name, r.phone, r.address,
-              r.credit_limit, r.outstanding, r.gst_number,
+              r.credit_limit, r.outstanding, r.gst_number, r.area_id,
               a.name AS area_name
        FROM retailers r
        LEFT JOIN areas a ON r.area_id = a.id
