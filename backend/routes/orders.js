@@ -58,7 +58,7 @@ router.get('/', auth, allowRoles(...ALL_ORDER_ROLES), async (req, res) => {
         const [rows] = await db.query(
             `SELECT so.id, so.order_number, so.order_date, so.status,
               so.total_amount, so.bill_number, so.bill_date,
-              so.delivery_date, so.delivery_remark,
+              so.delivery_date, so.delivery_remark, so.cancel_reason,
               r.firm_name AS retailer_name, r.phone AS retailer_phone,
               a.name AS area_name,
               u.name AS salesperson_name
@@ -383,7 +383,38 @@ router.patch('/:id/deliver', auth, allowRoles(ROLES.DELIVERY_INCHARGE, ROLES.ADM
     }
 });
 
-// PATCH /api/orders/:id/cancel
+// PATCH /api/orders/:id/cancel-request - Bill Operator requests cancellation
+router.patch('/:id/cancel-request', auth, allowRoles(ROLES.BILL_OPERATOR, ROLES.ADMIN, ROLES.SUPER_ADMIN), async (req, res) => {
+    try {
+        const { cancel_reason } = req.body;
+        if (!cancel_reason || !cancel_reason.trim()) {
+            return res.status(400).json({ error: 'Cancellation reason is required.' });
+        }
+
+        const [orders] = await db.query(
+            "SELECT * FROM sales_orders WHERE id = ? AND status IN ('PENDING', 'BILLED')",
+            [req.params.id]
+        );
+        if (!orders.length) return res.status(404).json({ error: 'Order not found or cannot be cancelled.' });
+
+        await db.query(
+            "UPDATE sales_orders SET status = 'CANCEL_REQUESTED', cancel_reason = ? WHERE id = ?",
+            [cancel_reason.trim(), req.params.id]
+        );
+
+        await db.query(
+            `INSERT INTO audit_log (user_id, action, entity_type, entity_id, new_value)
+       VALUES (?, 'CANCEL_REQUESTED', 'order', ?, ?)`,
+            [req.user.id, req.params.id, JSON.stringify({ cancel_reason: cancel_reason.trim() })]
+        );
+        res.json({ message: 'Cancellation requested successfully.' });
+    } catch (err) {
+        console.error('Cancel request error:', err);
+        res.status(500).json({ error: 'Server error.' });
+    }
+});
+
+// PATCH /api/orders/:id/cancel - Admin approves cancellation or immediately cancels
 router.patch('/:id/cancel', auth, allowRoles(ROLES.ADMIN, ROLES.SUPER_ADMIN), async (req, res) => {
     try {
         const [orders] = await db.query(
@@ -396,8 +427,42 @@ router.patch('/:id/cancel', auth, allowRoles(ROLES.ADMIN, ROLES.SUPER_ADMIN), as
             "UPDATE sales_orders SET status = 'CANCELLED' WHERE id = ?",
             [req.params.id]
         );
-        res.json({ message: 'Order cancelled.' });
+
+        await db.query(
+            `INSERT INTO audit_log (user_id, action, entity_type, entity_id, new_value)
+       VALUES (?, 'ORDER_CANCELLED', 'order', ?, '{"status":"CANCELLED"}')`,
+            [req.user.id, req.params.id]
+        );
+        res.json({ message: 'Order successfully cancelled.' });
     } catch (err) {
+        console.error('Cancel approval error:', err);
+        res.status(500).json({ error: 'Server error.' });
+    }
+});
+
+// PATCH /api/orders/:id/reject-cancel - Admin rejects the cancellation request
+router.patch('/:id/reject-cancel', auth, allowRoles(ROLES.ADMIN, ROLES.SUPER_ADMIN), async (req, res) => {
+    try {
+        const [orders] = await db.query(
+            "SELECT * FROM sales_orders WHERE id = ? AND status = 'CANCEL_REQUESTED'",
+            [req.params.id]
+        );
+        if (!orders.length) return res.status(404).json({ error: 'Order not found or not in CANCEL_REQUESTED status.' });
+
+        // revert to PENDING by default
+        await db.query(
+            "UPDATE sales_orders SET status = 'PENDING', cancel_reason = NULL WHERE id = ?",
+            [req.params.id]
+        );
+
+        await db.query(
+            `INSERT INTO audit_log (user_id, action, entity_type, entity_id, new_value)
+       VALUES (?, 'CANCEL_REJECTED', 'order', ?, '{"status":"PENDING"}')`,
+            [req.user.id, req.params.id]
+        );
+        res.json({ message: 'Cancellation request rejected. Order reverted to PENDING.' });
+    } catch (err) {
+        console.error('Cancel rejection error:', err);
         res.status(500).json({ error: 'Server error.' });
     }
 });

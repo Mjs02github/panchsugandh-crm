@@ -58,16 +58,30 @@ export default function Dashboard() {
         );
 
         if (['super_admin', 'admin'].includes(role)) return (
-            <div className="grid grid-cols-2 gap-3">
-                <StatCard label="Today's Orders" value={stats.today_orders} icon="📋" color="brand" />
-                <StatCard label="Today Revenue" value={`₹${(stats.today_revenue || 0).toLocaleString('en-IN')}`} icon="💰" color="green" />
-                <StatCard label="MTD Revenue" value={`₹${(stats.mtd_revenue || 0).toLocaleString('en-IN')}`} icon="📈" color="blue" />
-                <StatCard label="Pending Bills" value={stats.pending} icon="🟡" color="yellow" />
-                <StatCard label="Billed" value={stats.billed} icon="📦" color="purple" />
-                <StatCard label="Ready to Ship" value={stats.ready_to_ship} icon="🚚" color="blue" />
-                <StatCard label="Delivered" value={stats.delivered} icon="✅" color="green" />
-                <StatCard label="Total Retailers" value={stats.total_retailers} icon="🏪" color="brand" />
-                <StatCard label="Active Users" value={stats.total_users} icon="👥" color="blue" />
+            <div className="space-y-4">
+                {stats.cancel_requests > 0 && (
+                    <div className="card bg-red-50 border border-red-200">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <h3 className="text-red-800 font-bold">⚠️ Action Required</h3>
+                                <p className="text-xs text-red-600 mt-1">You have {stats.cancel_requests} pending cancellation requests.</p>
+                            </div>
+                            <a href="/orders?status=CANCEL_REQUESTED" className="bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-semibold px-4 py-2 whitespace-nowrap">Review</a>
+                        </div>
+                    </div>
+                )}
+                <div className="grid grid-cols-2 gap-3">
+                    <StatCard label="Today's Orders" value={stats.today_orders} icon="📋" color="brand" />
+                    <StatCard label="Today Revenue" value={`₹${(stats.today_revenue || 0).toLocaleString('en-IN')}`} icon="💰" color="green" />
+                    <StatCard label="MTD Revenue" value={`₹${(stats.mtd_revenue || 0).toLocaleString('en-IN')}`} icon="📈" color="blue" />
+                    <StatCard label="Cancel Requests" value={stats.cancel_requests || 0} icon="⚠️" color="red" />
+                    <StatCard label="Pending Bills" value={stats.pending} icon="🟡" color="yellow" />
+                    <StatCard label="Billed" value={stats.billed} icon="📦" color="purple" />
+                    <StatCard label="Ready to Ship" value={stats.ready_to_ship} icon="🚚" color="blue" />
+                    <StatCard label="Delivered" value={stats.delivered} icon="✅" color="green" />
+                    <StatCard label="Total Retailers" value={stats.total_retailers} icon="🏪" color="brand" />
+                    <StatCard label="Active Users" value={stats.total_users} icon="👥" color="blue" />
+                </div>
             </div>
         );
 

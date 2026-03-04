@@ -10,8 +10,9 @@ function StatusBadge({ status }) {
         BILLED: 'status-billed',
         DELIVERED: 'status-delivered',
         CANCELLED: 'status-cancelled',
+        CANCEL_REQUESTED: 'bg-red-100 text-red-700 px-2.5 py-1 text-xs rounded-full font-semibold',
     };
-    return <span className={cls[status] || 'status-pending'}>{status}</span>;
+    return <span className={cls[status] || 'status-pending'}>{status === 'CANCEL_REQUESTED' ? 'Cancel Req' : status}</span>;
 }
 
 export default function OrdersList() {
@@ -19,9 +20,10 @@ export default function OrdersList() {
     const { user } = useAuth();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState('');
+    const [filter, setFilter] = useState(new URLSearchParams(window.location.search).get('status') || '');
 
     const isSalesperson = user?.role === 'salesperson';
+    const isAdmin = ['admin', 'super_admin'].includes(user?.role);
 
     const load = (status = '') => {
         setLoading(true);
@@ -38,11 +40,17 @@ export default function OrdersList() {
             <div className="page-header">
                 <h1 className="text-lg font-semibold flex-1">{isSalesperson ? 'My Orders' : 'All Orders'}</h1>
                 <select className="text-sm border border-gray-200 rounded-lg px-2 py-1 text-gray-600"
-                    value={filter} onChange={e => setFilter(e.target.value)}>
+                    value={filter} onChange={e => {
+                        setFilter(e.target.value);
+                        navigate(`/orders${e.target.value ? `?status=${e.target.value}` : ''}`, { replace: true });
+                    }}>
                     <option value="">All Status</option>
                     <option value="PENDING">Pending</option>
                     <option value="BILLED">Billed</option>
+                    <option value="READY_TO_SHIP">Ready to Ship</option>
                     <option value="DELIVERED">Delivered</option>
+                    <option value="CANCELLED">Cancelled</option>
+                    {isAdmin && <option value="CANCEL_REQUESTED">Cancel Requests</option>}
                 </select>
             </div>
 

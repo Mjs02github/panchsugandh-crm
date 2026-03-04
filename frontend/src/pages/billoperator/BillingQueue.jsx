@@ -16,6 +16,10 @@ export default function BillingQueue() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
+    const [showCancelFor, setShowCancelFor] = useState(null);
+    const [cancelReason, setCancelReason] = useState('');
+
+
     const load = () => {
         setLoading(true);
         api.get('/orders', { params: { status: 'PENDING' } })
@@ -32,6 +36,8 @@ export default function BillingQueue() {
         setFinalAmount(order.total_amount);
         setBillNum('');
         setOrderItems([]);
+        setShowCancelFor(null);
+        setCancelReason('');
 
         setLoadingDetails(true);
         try {
@@ -57,6 +63,24 @@ export default function BillingQueue() {
             load();
         } catch (err) {
             setError(err.response?.data?.error || 'Failed to update.');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleCancelRequest = async (orderId) => {
+        if (!cancelReason.trim()) return setError('Cancellation reason is required.');
+        setSubmitting(true);
+        setError('');
+        try {
+            await api.patch(`/orders/${orderId}/cancel-request`, { cancel_reason: cancelReason });
+            setSuccess('Cancellation requested. Sent to admin for approval.');
+            setSelected(null);
+            setShowCancelFor(null);
+            setCancelReason('');
+            load();
+        } catch (err) {
+            setError(err.response?.data?.error || 'Failed to request cancellation.');
         } finally {
             setSubmitting(false);
         }
@@ -141,14 +165,22 @@ export default function BillingQueue() {
                                     <input type="date" className="input" value={billDate}
                                         onChange={e => setBillDate(e.target.value)} />
                                 </div>
-                                <div className="flex gap-2">
-                                    <button onClick={() => handleBill(o.id)} disabled={submitting || loadingDetails}
-                                        className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold disabled:opacity-50">
-                                        {submitting ? 'Saving…' : '✅ Confirm Bill'}
-                                    </button>
-                                    <button onClick={() => setSelected(null)}
-                                        className="flex-1 py-2.5 border border-gray-300 text-gray-600 rounded-xl text-sm font-semibold">
-                                        Cancel
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex gap-2">
+                                        <button onClick={() => handleBill(o.id)} disabled={submitting || loadingDetails}
+                                            className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold disabled:opacity-50">
+                                            {submitting ? 'Saving…' : '✅ Confirm Bill'}
+                                        </button>
+                                        <button onClick={() => setSelected(null)}
+                                            className="flex-1 py-2.5 border border-gray-300 text-gray-600 rounded-xl text-sm font-semibold">
+                                            Cancel
+                                        </button>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowCancelFor(o.id)}
+                                        className="w-full py-2 border border-red-300 text-red-600 bg-red-50 rounded-xl text-sm font-semibold mt-1 hover:bg-red-100 transition-colors"
+                                    >
+                                        ⚠️ Request Cancellation
                                     </button>
                                 </div>
                             </div>
@@ -161,6 +193,43 @@ export default function BillingQueue() {
                     </div>
                 ))}
             </div>
+
+            {showCancelFor && (
+                <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-sm p-5 pb-8 sm:pb-5 animate-slide-up">
+                        <div className="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-800">Request Cancellation</h3>
+                                <p className="text-xs text-gray-500 mt-1">Order will be sent to Admin for approval</p>
+                            </div>
+                            <button onClick={() => { setShowCancelFor(null); setCancelReason(''); }} className="p-1 rounded-full hover:bg-gray-100">
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="label text-xs">Reason for Cancellation *</label>
+                                <textarea
+                                    className="input w-full min-h-[100px] resize-none"
+                                    placeholder="e.g. Retailer wants to change the items, or price issue..."
+                                    value={cancelReason}
+                                    onChange={e => setCancelReason(e.target.value)}
+                                ></textarea>
+                            </div>
+
+                            <button
+                                onClick={() => handleCancelRequest(showCancelFor)}
+                                disabled={submitting || !cancelReason.trim()}
+                                className="w-full py-3 bg-red-600 text-white font-semibold rounded-xl disabled:opacity-50"
+                            >
+                                {submitting ? 'Submitting...' : 'Submit Cancel Request'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <BottomNav />
         </div>
     );

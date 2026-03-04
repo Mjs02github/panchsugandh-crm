@@ -23,9 +23,10 @@ router.get('/stats', auth, async (req, res) => {
            SUM(CASE WHEN status='BILLED'    THEN 1 ELSE 0 END) AS billed,
            SUM(CASE WHEN status='READY_TO_SHIP' THEN 1 ELSE 0 END) AS ready_to_ship,
            SUM(CASE WHEN status='DELIVERED' THEN 1 ELSE 0 END) AS delivered,
+           SUM(CASE WHEN status='CANCEL_REQUESTED' THEN 1 ELSE 0 END) AS cancel_requests,
            SUM(CASE WHEN order_date=?       THEN 1 ELSE 0 END) AS today_orders,
            SUM(CASE WHEN order_date=? THEN total_amount ELSE 0 END) AS today_revenue,
-           SUM(CASE WHEN DATE_FORMAT(order_date,'%%Y-%%m')=? THEN total_amount ELSE 0 END) AS mtd_revenue
+           SUM(CASE WHEN DATE_FORMAT(order_date,'%Y-%m')=? THEN total_amount ELSE 0 END) AS mtd_revenue
          FROM sales_orders WHERE status != 'CANCELLED'`,
                 [today, today, month]
             );

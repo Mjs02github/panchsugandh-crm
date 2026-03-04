@@ -130,8 +130,10 @@ export default function OrderDetail() {
     const totalPaid = parseFloat(order.total_paid || 0);
     const outstanding = parseFloat(order.total_amount) - totalPaid;
     const paidPct = Math.min(100, (totalPaid / parseFloat(order.total_amount)) * 100);
-    const canCancel = ['admin', 'super_admin'].includes(user?.role) &&
-        !['DELIVERED', 'CANCELLED'].includes(order.status);
+
+    const isAdmin = ['admin', 'super_admin'].includes(user?.role);
+    const canCancel = isAdmin &&
+        !['DELIVERED', 'CANCELLED', 'CANCEL_REQUESTED'].includes(order.status);
     const canPrint = ['BILLED', 'READY_TO_SHIP', 'DELIVERED'].includes(order.status);
 
     const handleCancel = async () => {
@@ -141,6 +143,26 @@ export default function OrderDetail() {
             load();
         } catch (err) {
             alert(err.response?.data?.error || 'Failed to cancel order.');
+        }
+    };
+
+    const handleApproveCancel = async () => {
+        if (!window.confirm('Approve this cancellation request? The order will be cancelled.')) return;
+        try {
+            await api.patch(`/orders/${id}/cancel`);
+            load();
+        } catch (err) {
+            alert(err.response?.data?.error || 'Failed to approve cancellation.');
+        }
+    };
+
+    const handleRejectCancel = async () => {
+        if (!window.confirm('Reject this cancellation request? The order will return to PENDING.')) return;
+        try {
+            await api.patch(`/orders/${id}/reject-cancel`);
+            load();
+        } catch (err) {
+            alert(err.response?.data?.error || 'Failed to reject cancellation.');
         }
     };
 
@@ -183,6 +205,30 @@ export default function OrderDetail() {
                     <InfoRow label="Order Date" value={order.order_date} />
                     <InfoRow label="Notes" value={order.notes} />
                 </div>
+
+                {/* Cancel Request Info (Admin) */}
+                {isAdmin && order.status === 'CANCEL_REQUESTED' && (
+                    <div className="card border border-red-200 bg-red-50">
+                        <div className="flex items-center gap-2 text-red-700 mb-2">
+                            <span className="text-xl leading-none">⚠️</span>
+                            <h3 className="text-sm font-bold">Cancellation Requested</h3>
+                        </div>
+                        <p className="text-sm text-red-800 bg-white p-3 rounded-lg border border-red-100 whitespace-pre-wrap">
+                            <span className="font-semibold block mb-1">Reason:</span>
+                            {order.cancel_reason || 'No reason provided.'}
+                        </p>
+                        <div className="flex gap-2 mt-3">
+                            <button onClick={handleApproveCancel}
+                                className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-semibold transition-colors">
+                                Approve Cancel
+                            </button>
+                            <button onClick={handleRejectCancel}
+                                className="flex-1 py-2.5 bg-gray-600 hover:bg-gray-700 text-white rounded-xl text-sm font-semibold transition-colors">
+                                Reject Request
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Timeline */}
                 <StatusTimeline order={order} />
