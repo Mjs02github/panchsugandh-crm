@@ -1,44 +1,45 @@
-const mysql = require('mysql2/promise');
 require('dotenv').config();
+const mysql = require('mysql2/promise');
 
-async function run() {
-    const db = await mysql.createConnection({
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME
+async function migrate() {
+    const pool = mysql.createPool({
+        host: process.env.DB_HOST || 'localhost',
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASS || process.env.DB_PASSWORD || '',
+        database: process.env.DB_NAME || 'panchsugandh',
+        waitForConnections: true,
+        connectionLimit: 10,
+        queueLimit: 0
     });
 
     try {
-        await db.query('ALTER TABLE retailers ADD COLUMN latitude DECIMAL(10, 8) NULL');
-        console.log('Added latitude');
-    } catch (e) {
-        if (e.code !== 'ER_DUP_FIELDNAME') throw e;
-        console.log('latitude already exists');
+        console.log('Connecting to database...');
+        await pool.query('SELECT 1');
+        console.log('Connected.');
+
+        console.log('Adding latitude and longitude to retailers table...');
+        try {
+            await pool.query(`
+                ALTER TABLE retailers 
+                ADD COLUMN latitude DECIMAL(10, 8) NULL DEFAULT NULL,
+                ADD COLUMN longitude DECIMAL(11, 8) NULL DEFAULT NULL;
+            `);
+            console.log('Columns added successfully.');
+        } catch (err) {
+            if (err.code === 'ER_DUP_FIELDNAME') {
+                console.log('Columns already exist.');
+            } else {
+                throw err;
+            }
+        }
+
+        console.log('Migration completed successfully.');
+    } catch (err) {
+        console.error('Migration failed:', err);
+        process.exit(1);
+    } finally {
+        await pool.end();
     }
-
-    try {
-        await db.query('ALTER TABLE retailers ADD COLUMN longitude DECIMAL(11, 8) NULL');
-        console.log('Added longitude');
-    } catch (e) {
-        if (e.code !== 'ER_DUP_FIELDNAME') throw e;
-        console.log('longitude already exists');
-    }
-
-    await db.query(`
-        CREATE TABLE IF NOT EXISTS salesperson_locations (
-            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            salesperson_id INT UNSIGNED NOT NULL,
-            latitude DECIMAL(10, 8) NOT NULL,
-            longitude DECIMAL(11, 8) NOT NULL,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-            CONSTRAINT fk_sl_salesperson FOREIGN KEY (salesperson_id) REFERENCES users(id) ON DELETE CASCADE
-        )
-    `);
-    console.log('Created salesperson_locations table');
-
-    await db.end();
-    console.log('Done!');
 }
 
-run().catch(console.error);
+migrate();
