@@ -19,7 +19,7 @@ export default function SalespersonTracking() {
         api.get('/users').then(res => {
             // Filter for trackable users
             const trackers = res.data.filter(u =>
-                ['salesperson', 'sales_officer'].includes(u.role_name)
+                ['salesperson', 'sales_officer'].includes(u.role)
             );
             setSalespersons(trackers);
             if (trackers.length > 0) setSelectedUser(trackers[0].id);
@@ -58,7 +58,7 @@ export default function SalespersonTracking() {
                         <select className="input" value={selectedUser} onChange={e => setSelectedUser(e.target.value)}>
                             <option value="">-- Select Person --</option>
                             {salespersons.map(s => (
-                                <option key={s.id} value={s.id}>{s.name} ({s.role_name.replace('_', ' ')})</option>
+                                <option key={s.id} value={s.id}>{s.name} ({s.role.replace('_', ' ')})</option>
                             ))}
                         </select>
                     </div>
