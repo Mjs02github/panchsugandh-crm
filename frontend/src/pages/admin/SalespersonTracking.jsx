@@ -2,6 +2,17 @@ import { useState, useEffect } from 'react';
 import api from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix for default marker icon in react-leaflet
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
 
 export default function SalespersonTracking() {
     const { user } = useAuth();
@@ -13,6 +24,7 @@ export default function SalespersonTracking() {
     const [locations, setLocations] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [liveStatus, setLiveStatus] = useState({});
 
     useEffect(() => {
         // Fetch users to populate the dropdown
@@ -24,6 +36,15 @@ export default function SalespersonTracking() {
             setSalespersons(trackers);
             if (trackers.length > 0) setSelectedUser(trackers[0].id);
         }).catch(err => console.error(err));
+
+        // Fetch live status
+        api.get('/locations/live').then(res => {
+            const statusMap = {};
+            res.data.forEach(item => {
+                statusMap[item.salesperson_id] = item.last_ping_at;
+            });
+            setLiveStatus(statusMap);
+        }).catch(err => console.error('Failed to fetch live status', err));
     }, []);
 
     useEffect(() => {
@@ -57,9 +78,15 @@ export default function SalespersonTracking() {
                         <label className="label">Select Salesperson</label>
                         <select className="input" value={selectedUser} onChange={e => setSelectedUser(e.target.value)}>
                             <option value="">-- Select Person --</option>
-                            {salespersons.map(s => (
-                                <option key={s.id} value={s.id}>{s.name} ({s.role.replace('_', ' ')})</option>
-                            ))}
+                            {salespersons.map(s => {
+                                const lastPing = liveStatus[s.id];
+                                const isLive = lastPing && (new Date() - new Date(lastPing)) < 30 * 60 * 1000;
+                                return (
+                                    <option key={s.id} value={s.id}>
+                                        {isLive ? '🟢 ' : ''}{s.name} ({s.role.replace('_', ' ')})
+                                    </option>
+                                );
+                            })}
                         </select>
                     </div>
                     <div>
@@ -81,26 +108,59 @@ export default function SalespersonTracking() {
                     ) : locations.length === 0 ? (
                         <p className="text-gray-400 text-sm text-center py-4">No location data found for this date.</p>
                     ) : (
-                        <div className="relative border-l-2 border-brand-200 ml-3 space-y-4 py-2">
-                            {locations.map((loc, idx) => {
-                                const time = new Date(loc.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                                return (
-                                    <div key={idx} className="relative pl-5">
-                                        <div className="absolute w-3 h-3 bg-brand-500 rounded-full -left-[7px] top-1 border-2 border-white shadow-sm" />
-                                        <div className="text-sm font-medium text-gray-800">{time}</div>
-                                        <a
-                                            href={`https://maps.google.com/?q=${loc.latitude},${loc.longitude}`}
-                                            target="_blank" rel="noreferrer"
-                                            className="text-xs text-blue-600 underline font-medium inline-block mt-0.5"
-                                        >
-                                            View on Google Maps 📍
-                                        </a>
-                                        <p className="text-[10px] text-gray-400 mt-0.5 font-mono">
-                                            {Number(loc.latitude).toFixed(5)}, {Number(loc.longitude).toFixed(5)}
-                                        </p>
-                                    </div>
-                                );
-                            })}
+                        <div className="space-y-4">
+                            {/* Map View */}
+                            <div className="h-64 w-full rounded-xl overflow-hidden border border-gray-200 shadow-inner z-0 relative">
+                                <MapContainer
+                                    center={[locations[0].latitude, locations[0].longitude]}
+                                    zoom={14}
+                                    style={{ height: '100%', width: '100%', zIndex: 0 }}
+                                >
+                                    <TileLayer
+                                        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                                    />
+                                    <Polyline
+                                        positions={locations.map(loc => [loc.latitude, loc.longitude])}
+                                        color="#0ea5e9" weight={4} opacity={0.7} dashArray="8, 8"
+                                    />
+                                    {locations.map((loc, idx) => {
+                                        const time = new Date(loc.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                        const isStart = idx === 0;
+                                        const isEnd = idx === locations.length - 1;
+                                        return (
+                                            <Marker key={idx} position={[loc.latitude, loc.longitude]}>
+                                                <Popup>
+                                                    <div className="text-sm font-semibold">{time}</div>
+                                                    <div className="text-xs text-gray-500">{isStart ? 'Start Point' : isEnd ? 'Current Point' : 'Ping'}</div>
+                                                </Popup>
+                                            </Marker>
+                                        );
+                                    })}
+                                </MapContainer>
+                            </div>
+
+                            {/* Timeline View */}
+                            <div className="relative border-l-2 border-brand-200 ml-3 space-y-4 py-2 mt-4">
+                                {locations.map((loc, idx) => {
+                                    const time = new Date(loc.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                    return (
+                                        <div key={idx} className="relative pl-5">
+                                            <div className="absolute w-3 h-3 bg-brand-500 rounded-full -left-[7px] top-1 border-2 border-white shadow-sm" />
+                                            <div className="text-sm font-medium text-gray-800">{time}</div>
+                                            <a
+                                                href={`https://maps.google.com/?q=${loc.latitude},${loc.longitude}`}
+                                                target="_blank" rel="noreferrer"
+                                                className="text-xs text-blue-600 underline font-medium inline-block mt-0.5"
+                                            >
+                                                View on Google Maps 📍
+                                            </a>
+                                            <p className="text-[10px] text-gray-400 mt-0.5 font-mono">
+                                                {Number(loc.latitude).toFixed(5)}, {Number(loc.longitude).toFixed(5)}
+                                            </p>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     )}
                 </div>

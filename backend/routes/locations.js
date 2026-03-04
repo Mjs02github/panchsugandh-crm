@@ -24,6 +24,21 @@ router.post('/', auth, allowRoles(ROLES.SALESPERSON, ROLES.SALES_OFFICER), async
     }
 });
 
+// Admin fetching live status (latest ping of each salesperson)
+router.get('/live', auth, allowRoles(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.SALES_OFFICER), async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            `SELECT salesperson_id, MAX(timestamp) AS last_ping_at 
+             FROM salesperson_locations 
+             GROUP BY salesperson_id`
+        );
+        res.json(rows);
+    } catch (err) {
+        console.error('Error fetching live status:', err);
+        res.status(500).json({ error: 'Server error.' });
+    }
+});
+
 // Admin fetching location history for a user
 router.get('/history/:salesperson_id', auth, allowRoles(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.SALES_OFFICER), async (req, res) => {
     try {
