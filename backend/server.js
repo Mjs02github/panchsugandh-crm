@@ -38,6 +38,7 @@ app.use('/api/delivery', require('./routes/delivery'));
 app.use('/api/visits', require('./routes/visits'));
 app.use('/api/targets', require('./routes/targets'));
 app.use('/api/dashboard', require('./routes/dashboard'));
+app.use('/api/locations', require('./routes/locations'));
 
 // ── Health check ────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

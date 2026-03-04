@@ -30,6 +30,7 @@ import TeamList from './pages/salesofficer/TeamList';
 
 // Admin
 import UserManagement from './pages/admin/UserManagement';
+import SalespersonTracking from './pages/admin/SalespersonTracking';
 
 function RoleRouter() {
   const { user } = useAuth();
@@ -58,10 +59,18 @@ function Unauthorized() {
   );
 }
 
+import useGPSTracking from './hooks/useGPSTracking';
+
+function GPSTracker() {
+  useGPSTracking();
+  return null;
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <GPSTracker />
         <Routes>
           {/* Public */}
           <Route path="/login" element={<Login />} />
@@ -122,6 +131,9 @@ export default function App() {
           {/* ── Admin ── */}
           <Route path="/admin/users" element={
             <ProtectedRoute roles={['admin', 'super_admin']}><UserManagement /></ProtectedRoute>
+          } />
+          <Route path="/admin/tracking" element={
+            <ProtectedRoute roles={['admin', 'super_admin', 'sales_officer']}><SalespersonTracking /></ProtectedRoute>
           } />
 
           {/* Fallback */}

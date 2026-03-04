@@ -34,12 +34,14 @@ const NAV_CONFIG = {
         { label: 'Orders', icon: '📋', path: '/orders' },
         { label: 'Parties', icon: '🏪', path: '/store/retailers' },
         { label: 'Users', icon: '👤', path: '/admin/users' },
+        { label: 'Tracking', icon: '📍', path: '/admin/tracking' },
     ],
     super_admin: [
         { label: 'Dashboard', icon: '📊', path: '/dashboard' },
         { label: 'Orders', icon: '📋', path: '/orders' },
         { label: 'Parties', icon: '🏪', path: '/store/retailers' },
         { label: 'Users', icon: '👤', path: '/admin/users' },
+        { label: 'Tracking', icon: '📍', path: '/admin/tracking' },
     ],
 };
 

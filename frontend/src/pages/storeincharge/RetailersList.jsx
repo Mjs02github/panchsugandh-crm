@@ -54,14 +54,34 @@ export default function RetailersList() {
         address: '', state: '', district: '', area_id: '', is_new_area: false, gst_number: '', credit_limit: '',
     });
 
+    const getGPSLocation = () => {
+        return new Promise((resolve) => {
+            if (!navigator.geolocation) return resolve({ latitude: null, longitude: null });
+            navigator.geolocation.getCurrentPosition(
+                (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+                (err) => {
+                    console.warn('GPS Error:', err);
+                    resolve({ latitude: null, longitude: null });
+                },
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+            );
+        });
+    };
+
     const handleSave = async (e) => {
         e.preventDefault();
         setError(''); setSaving(true);
         try {
-            const payload = { ...form, address: [form.address, form.district, form.state].filter(Boolean).join(', ') };
+            const gps = await getGPSLocation();
+            const payload = {
+                ...form,
+                address: [form.address, form.district, form.state].filter(Boolean).join(', '),
+                latitude: gps.latitude,
+                longitude: gps.longitude
+            };
             delete payload.is_new_area;
             await api.post('/retailers', payload);
-            setSuccess('✅ Party added successfully!');
+            setSuccess(gps.latitude ? '✅ Party added successfully with GPS!' : '✅ Party added successfully!');
             setShowForm(false);
             resetForm();
             load(search);
