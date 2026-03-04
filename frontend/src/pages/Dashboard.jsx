@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api';
 import BottomNav from '../components/BottomNav';
+import AttendanceWidget from '../components/AttendanceWidget';
 
 const ROLE_LABELS = {
     super_admin: 'Super Admin',
@@ -87,6 +88,7 @@ export default function Dashboard() {
 
         if (role === 'salesperson') return (
             <div className="space-y-3">
+                <AttendanceWidget user={user} />
                 <div className="grid grid-cols-2 gap-3">
                     <StatCard label="Today's Orders" value={stats.today_orders} icon="📋" color="brand" />
                     <StatCard label="Today Visits" value={stats.today_visits} icon="🗺️" color="blue" />
@@ -136,11 +138,14 @@ export default function Dashboard() {
         );
 
         if (role === 'sales_officer') return (
-            <div className="grid grid-cols-2 gap-3">
-                <StatCard label="Team Size" value={stats.team_size} icon="👥" color="brand" />
-                <StatCard label="Team Orders" value={stats.total_orders} icon="📋" color="blue" />
-                <div className="col-span-2">
-                    <StatCard label="Team Revenue" value={`₹${(stats.team_revenue || 0).toLocaleString('en-IN')}`} icon="💰" color="green" />
+            <div className="space-y-3">
+                <AttendanceWidget user={user} />
+                <div className="grid grid-cols-2 gap-3">
+                    <StatCard label="Team Size" value={stats.team_size} icon="👥" color="brand" />
+                    <StatCard label="Team Orders" value={stats.total_orders} icon="📋" color="blue" />
+                    <div className="col-span-2">
+                        <StatCard label="Team Revenue" value={`₹${(stats.team_revenue || 0).toLocaleString('en-IN')}`} icon="💰" color="green" />
+                    </div>
                 </div>
             </div>
         );

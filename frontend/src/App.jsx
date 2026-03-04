@@ -31,6 +31,7 @@ import TeamList from './pages/salesofficer/TeamList';
 // Admin
 import UserManagement from './pages/admin/UserManagement';
 import SalespersonTracking from './pages/admin/SalespersonTracking';
+import AttendanceReport from './pages/admin/AttendanceReport';
 
 function RoleRouter() {
   const { user } = useAuth();
@@ -134,6 +135,9 @@ export default function App() {
           } />
           <Route path="/admin/tracking" element={
             <ProtectedRoute roles={['admin', 'super_admin', 'sales_officer']}><SalespersonTracking /></ProtectedRoute>
+          } />
+          <Route path="/admin/attendance" element={
+            <ProtectedRoute roles={['admin', 'super_admin', 'sales_officer']}><AttendanceReport /></ProtectedRoute>
           } />
 
           {/* Fallback */}

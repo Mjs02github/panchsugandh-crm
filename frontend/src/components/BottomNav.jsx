@@ -35,6 +35,7 @@ const NAV_CONFIG = {
         { label: 'Parties', icon: '🏪', path: '/store/retailers' },
         { label: 'Users', icon: '👤', path: '/admin/users' },
         { label: 'Tracking', icon: '📍', path: '/admin/tracking' },
+        { label: 'Attendance', icon: '🕒', path: '/admin/attendance' },
     ],
     super_admin: [
         { label: 'Dashboard', icon: '📊', path: '/dashboard' },
@@ -42,6 +43,7 @@ const NAV_CONFIG = {
         { label: 'Parties', icon: '🏪', path: '/store/retailers' },
         { label: 'Users', icon: '👤', path: '/admin/users' },
         { label: 'Tracking', icon: '📍', path: '/admin/tracking' },
+        { label: 'Attendance', icon: '🕒', path: '/admin/attendance' },
     ],
 };
 
