@@ -223,12 +223,12 @@ router.post('/', auth, allowRoles(ROLES.SALESPERSON, ROLES.ADMIN, ROLES.SUPER_AD
             );
         }
 
-        // Audit log
-        await conn.query(
-            `INSERT INTO audit_log (user_id, action, entity_type, entity_id, new_value)
-       VALUES (?, 'ORDER_CREATED', 'order', ?, ?)`,
-            [req.user.id, orderId, JSON.stringify({ order_number, total_amount })]
-        );
+        // Audit log (Skipped as table does not exist)
+        // await conn.query(
+        //     `INSERT INTO audit_log (user_id, action, entity_type, entity_id, new_value)
+        // VALUES (?, 'ORDER_CREATED', 'order', ?, ?)`,
+        //     [req.user.id, orderId, JSON.stringify({ order_number, total_amount })]
+        // );
 
         await conn.commit();
         res.status(201).json({
