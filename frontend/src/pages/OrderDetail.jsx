@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api';
+import InvoiceTemplate from '../components/InvoiceTemplate';
 
 // ── Status helpers ────────────────────────────────────────
 const STATUS_CONFIG = {
@@ -131,6 +132,7 @@ export default function OrderDetail() {
     const paidPct = Math.min(100, (totalPaid / parseFloat(order.total_amount)) * 100);
     const canCancel = ['admin', 'super_admin'].includes(user?.role) &&
         !['DELIVERED', 'CANCELLED'].includes(order.status);
+    const canPrint = ['BILLED', 'READY_TO_SHIP', 'DELIVERED'].includes(order.status);
 
     const handleCancel = async () => {
         if (!window.confirm('Are you sure you want to cancel this order?')) return;
@@ -154,7 +156,16 @@ export default function OrderDetail() {
                 <span className={sc.cls}>{sc.icon} {sc.label}</span>
             </div>
 
-            <div className="px-4 pt-4 space-y-3">
+            <div className="px-4 pt-4 space-y-3 print:hidden">
+
+                {canPrint && (
+                    <button
+                        onClick={() => window.print()}
+                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold flex items-center justify-center gap-2 py-3 rounded-xl shadow-sm transition-colors mb-2"
+                    >
+                        <span>📄</span> Download / Print Tax Invoice
+                    </button>
+                )}
 
                 {/* Retailer card */}
                 <div className="card">
@@ -304,6 +315,9 @@ export default function OrderDetail() {
                     </button>
                 )}
             </div>
+
+            {/* Hidden printable invoice */}
+            <InvoiceTemplate order={order} items={order.items} totalPaid={totalPaid} />
         </div>
     );
 }

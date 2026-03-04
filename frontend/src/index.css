@@ -29,6 +29,37 @@
     margin: 0 auto;
     min-height: 100dvh;
   }
+
+  @media print {
+    @page {
+      margin: 0;
+      size: A4 portrait;
+    }
+
+    body {
+      margin: 0;
+      -webkit-print-color-adjust: exact !important;
+      color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    /* Hide everything by default when printing except elements with .print\:block */
+    body * {
+      visibility: hidden;
+    }
+
+    .invoice-print-container,
+    .invoice-print-container * {
+      visibility: visible;
+    }
+
+    .invoice-print-container {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 210mm;
+    }
+  }
 }
 
 @layer components {
