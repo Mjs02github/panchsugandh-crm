@@ -240,7 +240,7 @@ router.post('/', auth, allowRoles(ROLES.SALESPERSON, ROLES.ADMIN, ROLES.SUPER_AD
     } catch (err) {
         await conn.rollback();
         console.error('Create order error:', err);
-        res.status(500).json({ error: 'Failed to create order.' });
+        res.status(500).json({ error: 'Failed to create order.', details: err.sqlMessage || err.message });
     } finally {
         conn.release();
     }
