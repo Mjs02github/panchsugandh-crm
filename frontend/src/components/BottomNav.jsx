@@ -6,48 +6,48 @@ const NAV_CONFIG = {
         { label: 'Orders', icon: '📋', path: '/orders' },
         { label: 'New Order', icon: '➕', path: '/orders/new' },
         { label: 'Payments', icon: '💰', path: '/payments' },
-        { label: 'Parties', icon: '🏪', path: '/store/retailers' }, // ← NEW
-        { label: 'Visits', icon: '🗺️', path: '/visits' },
+        { label: 'Parties', icon: '🏪', path: '/store/retailers' },
         { label: 'Reports', icon: '📊', path: '/reports' },
+        { label: 'Chat', icon: '💬', path: '/chat' },
     ],
     bill_operator: [
         { label: 'Queue', icon: '📄', path: '/billing' },
-        { label: 'Parties', icon: '🏪', path: '/store/retailers' }, // ← NEW
+        { label: 'Parties', icon: '🏪', path: '/store/retailers' },
         { label: 'Products', icon: '📦', path: '/store/products' },
+        { label: 'Chat', icon: '💬', path: '/chat' },
     ],
     delivery_incharge: [
         { label: 'Pending', icon: '🚚', path: '/delivery' },
         { label: 'Done', icon: '✅', path: '/delivery/history' },
+        { label: 'Chat', icon: '💬', path: '/chat' },
     ],
     store_incharge: [
         { label: 'Orders', icon: '📋', path: '/store/orders' },
         { label: 'Retailers', icon: '🏪', path: '/store/retailers' },
-        { label: 'Areas', icon: '📍', path: '/store/areas' },
         { label: 'Products', icon: '📦', path: '/store/products' },
+        { label: 'Chat', icon: '💬', path: '/chat' },
     ],
     sales_officer: [
         { label: 'Team', icon: '👥', path: '/team' },
         { label: 'Orders', icon: '📋', path: '/orders' },
-        { label: 'Visits', icon: '🗺️', path: '/visits' },
         { label: 'Reports', icon: '📊', path: '/reports' },
+        { label: 'Chat', icon: '💬', path: '/chat' },
     ],
     admin: [
         { label: 'Dashboard', icon: '📊', path: '/dashboard' },
         { label: 'Orders', icon: '📋', path: '/orders' },
-        { label: 'Parties', icon: '🏪', path: '/store/retailers' },
         { label: 'Users', icon: '👤', path: '/admin/users' },
         { label: 'Tracking', icon: '📍', path: '/admin/tracking' },
-        { label: 'Attendance', icon: '🕒', path: '/admin/attendance' },
         { label: 'Reports', icon: '📊', path: '/reports' },
+        { label: 'Chat', icon: '💬', path: '/chat' },
     ],
     super_admin: [
         { label: 'Dashboard', icon: '📊', path: '/dashboard' },
         { label: 'Orders', icon: '📋', path: '/orders' },
-        { label: 'Parties', icon: '🏪', path: '/store/retailers' },
         { label: 'Users', icon: '👤', path: '/admin/users' },
         { label: 'Tracking', icon: '📍', path: '/admin/tracking' },
-        { label: 'Attendance', icon: '🕒', path: '/admin/attendance' },
         { label: 'Reports', icon: '📊', path: '/reports' },
+        { label: 'Chat', icon: '💬', path: '/chat' },
     ],
 };
 
