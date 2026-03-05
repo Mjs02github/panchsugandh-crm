@@ -27,6 +27,9 @@ export default function Login() {
             const user = await login(form.email, form.password);
             navigate(ROLE_HOME[user.role] || '/dashboard', { replace: true });
         } catch (err) {
+            // SHOW ERROR ON PHONE SCREEN TO DIAGNOSE CORS/NETWORK
+            alert(`Error: ${err.message}\nURL: ${import.meta.env.VITE_API_URL}`);
+
             setError(err.response?.data?.error || 'Login failed. Please try again.');
         } finally {
             setLoading(false);

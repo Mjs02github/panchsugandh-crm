@@ -15,11 +15,12 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: function (origin, callback) {
-        // Allow Capacitor Android (http://localhost), generic localhost, or existing origins
+        // Allow Capacitor Android (http/https localhost), generic localhost, or existing origins
         if (!origin ||
             allowedOrigins.includes(origin) ||
             process.env.FRONTEND_URL === origin ||
             origin.startsWith('http://localhost') ||
+            origin.startsWith('https://localhost') ||
             origin.startsWith('capacitor://localhost')) {
             callback(null, true);
         } else {
