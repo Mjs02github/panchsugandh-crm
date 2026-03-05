@@ -7,6 +7,7 @@ const router = express.Router();
 const ALL_ORDER_ROLES = [
     ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.SALES_OFFICER,
     ROLES.SALESPERSON, ROLES.BILL_OPERATOR, ROLES.DELIVERY_INCHARGE,
+    ROLES.STORE_INCHARGE
 ];
 
 // ── Helper: generate order number ──────────────────────────
