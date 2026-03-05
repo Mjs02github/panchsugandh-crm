@@ -38,10 +38,8 @@ export default function Login() {
 
             {/* --- CUSTOM HEADER --- */}
             <div className="bg-white shadow-md rounded-b-3xl px-6 py-5 flex items-center gap-4 z-10">
-                {/* Space for company logo */}
-                <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 shrink-0">
-                    <span className="text-[10px] text-gray-500 font-bold text-center leading-tight">LOGO<br />SPACE</span>
-                </div>
+                {/* Company logo */}
+                <img src="/assets/images/logo.jpeg" alt="Panchsugandh Logo" className="w-16 h-16 rounded-xl object-cover shrink-0 shadow-sm" />
                 <div className="flex flex-col">
                     <h1 className="text-2xl font-black text-gray-900 tracking-tight">Sjd Developer</h1>
                     <h2 className="text-lg font-bold text-red-600">Panchsugandh</h2>
