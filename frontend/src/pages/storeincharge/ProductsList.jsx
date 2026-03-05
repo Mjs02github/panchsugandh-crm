@@ -15,8 +15,9 @@ export default function ProductsList() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [customCategory, setCustomCategory] = useState('');
 
-    const CATEGORIES = ['Dhoop', 'Agarbatti', 'Pooja Items', 'Sambrani', 'Guggal', 'Other'];
+    const CATEGORIES = ['Dhoop', 'Sambrani'];
 
     const load = (q = '') => {
         setLoading(true);
@@ -89,10 +90,35 @@ export default function ProductsList() {
                     </div>
                     <div>
                         <label className="label">Category</label>
-                        <select className="input" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
+                        <select
+                            className="input"
+                            value={CATEGORIES.includes(form.category) ? form.category : (form.category ? '__custom__' : '')}
+                            onChange={e => {
+                                if (e.target.value === '__custom__') {
+                                    setForm(f => ({ ...f, category: customCategory }));
+                                } else {
+                                    setCustomCategory('');
+                                    setForm(f => ({ ...f, category: e.target.value }));
+                                }
+                            }}
+                        >
                             <option value="">Select…</option>
-                            {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                            <option value="__custom__">+ Add New Category…</option>
                         </select>
+                        {/* Show text input when custom is selected */}
+                        {(!CATEGORIES.includes(form.category) && form.category !== '') || form.category === '' && customCategory ? null : null}
+                        {(form.category && !CATEGORIES.includes(form.category)) || (!CATEGORIES.includes(form.category) && customCategory !== '') ? (
+                            <input
+                                className="input mt-2"
+                                placeholder="Type category name…"
+                                value={form.category && !CATEGORIES.includes(form.category) ? form.category : customCategory}
+                                onChange={e => {
+                                    setCustomCategory(e.target.value);
+                                    setForm(f => ({ ...f, category: e.target.value }));
+                                }}
+                            />
+                        ) : null}
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                         <div>
