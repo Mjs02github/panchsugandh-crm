@@ -71,7 +71,7 @@ router.get('/master', auth, allowRoles(...REPORT_ROLES), async (req, res) => {
 
         const [rows] = await db.query(
             `SELECT 
-                so.order_date AS Date,
+                DATE_FORMAT(so.order_date, '%Y-%m-%d') AS Date,
                 so.order_number AS 'Order No',
                 u.name AS Salesman,
                 a.name AS Area,

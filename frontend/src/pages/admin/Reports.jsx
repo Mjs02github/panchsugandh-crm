@@ -46,9 +46,10 @@ export default function Reports() {
     const handleDownload = async () => {
         setDownloading(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('crm_token');
+            const baseURL = api.defaults.baseURL || '/api';
             const response = await fetch(
-                `${api.defaults.baseURL}${currentTab.endpoint}?from=${from}&to=${to}&format=excel`,
+                `${baseURL}${currentTab.endpoint}?from=${from}&to=${to}&format=excel`,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             if (!response.ok) throw new Error('Download failed');
@@ -102,8 +103,8 @@ export default function Reports() {
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key)}
                             className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${activeTab === tab.key
-                                    ? 'bg-brand-600 text-white shadow-md'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                ? 'bg-brand-600 text-white shadow-md'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                 }`}
                         >
                             {tab.label}
