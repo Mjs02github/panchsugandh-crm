@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../../api';
-import { useAuth } from '../../context/AuthContext';
-import BottomNav from '../../components/BottomNav';
+import api from '../api';
+import { useAuth } from '../context/AuthContext';
+import BottomNav from '../components/BottomNav';
 
 const ROLE_COLOR = {
     super_admin: 'bg-purple-100 text-purple-700',
@@ -315,8 +315,8 @@ export default function Chat() {
                                             <p className="text-[10px] text-gray-400 mb-0.5 px-1">{msg.sender_name}</p>
                                         )}
                                         <div className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed break-words ${mine
-                                                ? 'bg-brand-600 text-white rounded-tr-sm'
-                                                : 'bg-white text-gray-800 border border-gray-200 rounded-tl-sm shadow-sm'
+                                            ? 'bg-brand-600 text-white rounded-tr-sm'
+                                            : 'bg-white text-gray-800 border border-gray-200 rounded-tl-sm shadow-sm'
                                             }`}>
                                             {msg.message}
                                         </div>
