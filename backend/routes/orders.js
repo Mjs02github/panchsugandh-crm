@@ -25,7 +25,7 @@ async function generateOrderNumber() {
 // ─────────────────────────────────────────────────────────
 router.get('/', auth, allowRoles(...ALL_ORDER_ROLES), async (req, res) => {
     try {
-        const { status, date, retailer_id, page = 1, limit = 30 } = req.query;
+        const { status, date, from, to, retailer_id, page = 1, limit = 100 } = req.query;
         const { role, id: userId, managerId } = req.user;
 
         let conditions = [];
@@ -36,20 +36,21 @@ router.get('/', auth, allowRoles(...ALL_ORDER_ROLES), async (req, res) => {
             conditions.push('so.salesperson_id = ?');
             params.push(userId);
         } else if (role === ROLES.SALES_OFFICER) {
-            // only orders of salespeople under this officer
             conditions.push('u.manager_id = ?');
             params.push(userId);
         } else if (role === ROLES.BILL_OPERATOR) {
-            conditions.push("so.status IN ('PENDING','BILLED')");
+            // Bill operator sees all statuses when requesting history, else PENDING+BILLED
+            if (!status) conditions.push("so.status IN ('PENDING','BILLED','READY_TO_SHIP','DELIVERED','CANCELLED')");
         } else if (role === ROLES.STORE_INCHARGE) {
             conditions.push("so.status IN ('BILLED','READY_TO_SHIP')");
         } else if (role === ROLES.DELIVERY_INCHARGE) {
             conditions.push("so.status IN ('READY_TO_SHIP','DELIVERED')");
         }
-        // admin / super_admin see everything → no extra filter
 
         if (status) { conditions.push('so.status = ?'); params.push(status); }
-        if (date) { conditions.push('so.order_date = ?'); params.push(date); }
+        if (date) { conditions.push('DATE(so.order_date) = ?'); params.push(date); }
+        if (from) { conditions.push('so.order_date >= ?'); params.push(from); }
+        if (to) { conditions.push('so.order_date <= ?'); params.push(to); }
         if (retailer_id) { conditions.push('so.retailer_id = ?'); params.push(retailer_id); }
 
         const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
