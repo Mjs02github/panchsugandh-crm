@@ -15,7 +15,12 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: function (origin, callback) {
-        if (!origin || allowedOrigins.includes(origin) || process.env.FRONTEND_URL === origin || (origin && origin.startsWith('http://localhost:'))) {
+        // Allow Capacitor Android (http://localhost), generic localhost, or existing origins
+        if (!origin ||
+            allowedOrigins.includes(origin) ||
+            process.env.FRONTEND_URL === origin ||
+            origin.startsWith('http://localhost') ||
+            origin.startsWith('capacitor://localhost')) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
