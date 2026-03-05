@@ -51,6 +51,42 @@ router.get('/', auth, async (req, res) => {
     }
 });
 
+// GET /api/payments/retailer-balances — billed orders with outstanding amount
+router.get('/retailer-balances', auth, async (req, res) => {
+    try {
+        const { role, id: userId } = req.user;
+        let cond = "so.status IN ('BILLED','READY_TO_SHIP','DELIVERED')";
+        const params = [];
+        if (role === 'salesperson') { cond += ' AND so.salesperson_id = ?'; params.push(userId); }
+
+        const [rows] = await db.query(
+            `SELECT
+                so.id AS order_id,
+                so.order_number,
+                so.bill_number,
+                so.total_amount AS billed_amount,
+                COALESCE(SUM(pc.amount),0) AS paid_amount,
+                so.total_amount - COALESCE(SUM(pc.amount),0) AS outstanding_amount,
+                r.id AS retailer_id,
+                r.firm_name AS retailer_name,
+                a.name AS area_name
+             FROM sales_orders so
+             JOIN retailers r ON so.retailer_id = r.id
+             LEFT JOIN areas a ON r.area_id = a.id
+             LEFT JOIN payment_collections pc ON pc.order_id = so.id
+             WHERE ${cond}
+             GROUP BY so.id, r.id, a.name
+             HAVING outstanding_amount > 0
+             ORDER BY r.firm_name, so.order_number`,
+            params
+        );
+        res.json(rows);
+    } catch (err) {
+        console.error('Retailer balances error:', err);
+        res.status(500).json({ error: 'Server error.' });
+    }
+});
+
 // POST /api/payments — Salesperson records a collection
 router.post('/', auth, allowRoles(ROLES.SALESPERSON, ROLES.ADMIN, ROLES.SUPER_ADMIN), async (req, res) => {
     try {

@@ -294,6 +294,15 @@ router.patch('/:id/bill', auth, allowRoles(ROLES.BILL_OPERATOR, ROLES.ADMIN, ROL
             }
         }
 
+        // ── Update retailer outstanding balance ──
+        const billedAmount = (final_amount !== undefined && final_amount !== '')
+            ? parseFloat(final_amount)
+            : parseFloat(orders[0].total_amount);
+        await conn.query(
+            'UPDATE retailers SET outstanding = outstanding + ? WHERE id = ?',
+            [billedAmount, orders[0].retailer_id]
+        );
+
         await conn.query(
             `INSERT INTO audit_log (user_id, action, entity_type, entity_id, new_value)
        VALUES (?, 'ORDER_BILLED', 'order', ?, ?)`,
