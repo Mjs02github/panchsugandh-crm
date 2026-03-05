@@ -13,7 +13,7 @@ export default function StoreDashboard() {
             try {
                 // Fetch orders for To Pack count
                 const ordersRes = await api.get('/orders');
-                const toPackCount = (ordersRes.data.orders || []).filter(o => o.status === 'BILLED').length;
+                const toPackCount = (Array.isArray(ordersRes.data) ? ordersRes.data : []).filter(o => o.status === 'BILLED').length;
 
                 // Fetch products for Low Stock count & alerts
                 const productsRes = await api.get('/products');

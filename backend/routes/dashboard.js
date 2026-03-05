@@ -14,29 +14,36 @@ router.get('/stats', auth, async (req, res) => {
         let stats = {};
 
         if ([ROLES.SUPER_ADMIN, ROLES.ADMIN].includes(role)) {
-            // Full system stats
-            const [[orders]] = await db.query(
-                `SELECT
-           COUNT(*)                                              AS total_orders,
-           SUM(total_amount)                                    AS total_revenue,
-           SUM(CASE WHEN status='PENDING'   THEN 1 ELSE 0 END) AS pending,
-           SUM(CASE WHEN status='BILLED'    THEN 1 ELSE 0 END) AS billed,
-           SUM(CASE WHEN status='READY_TO_SHIP' THEN 1 ELSE 0 END) AS ready_to_ship,
-           SUM(CASE WHEN status='DELIVERED' THEN 1 ELSE 0 END) AS delivered,
-           SUM(CASE WHEN status='CANCEL_REQUESTED' THEN 1 ELSE 0 END) AS cancel_requests,
-           SUM(CASE WHEN order_date=?       THEN 1 ELSE 0 END) AS today_orders,
-           SUM(CASE WHEN order_date=? THEN total_amount ELSE 0 END) AS today_revenue,
-           SUM(CASE WHEN DATE_FORMAT(order_date,'%Y-%m')=? THEN total_amount ELSE 0 END) AS mtd_revenue
-         FROM sales_orders WHERE status != 'CANCELLED'`,
-                [today, today, month]
-            );
-            const [[collections]] = await db.query(
-                `SELECT SUM(amount) AS today_collected
-         FROM payment_collections WHERE collection_date = ?`,
-                [today]
-            );
-            const [[retailers]] = await db.query('SELECT COUNT(*) AS total_retailers FROM retailers WHERE is_active=1');
-            const [[users]] = await db.query('SELECT COUNT(*) AS total_users FROM users WHERE is_active=1');
+            // Full system stats — run all queries in parallel for performance
+            const [
+                [[orders]],
+                [[collections]],
+                [[retailers]],
+                [[users]]
+            ] = await Promise.all([
+                db.query(
+                    `SELECT
+               COUNT(*)                                              AS total_orders,
+               SUM(total_amount)                                    AS total_revenue,
+               SUM(CASE WHEN status='PENDING'   THEN 1 ELSE 0 END) AS pending,
+               SUM(CASE WHEN status='BILLED'    THEN 1 ELSE 0 END) AS billed,
+               SUM(CASE WHEN status='READY_TO_SHIP' THEN 1 ELSE 0 END) AS ready_to_ship,
+               SUM(CASE WHEN status='DELIVERED' THEN 1 ELSE 0 END) AS delivered,
+               SUM(CASE WHEN status='CANCEL_REQUESTED' THEN 1 ELSE 0 END) AS cancel_requests,
+               SUM(CASE WHEN order_date=?       THEN 1 ELSE 0 END) AS today_orders,
+               SUM(CASE WHEN order_date=? THEN total_amount ELSE 0 END) AS today_revenue,
+               SUM(CASE WHEN DATE_FORMAT(order_date,'%Y-%m')=? THEN total_amount ELSE 0 END) AS mtd_revenue
+             FROM sales_orders WHERE status != 'CANCELLED'`,
+                    [today, today, month]
+                ),
+                db.query(
+                    `SELECT SUM(amount) AS today_collected
+             FROM payment_collections WHERE collection_date = ?`,
+                    [today]
+                ),
+                db.query('SELECT COUNT(*) AS total_retailers FROM retailers WHERE is_active=1'),
+                db.query('SELECT COUNT(*) AS total_users FROM users WHERE is_active=1'),
+            ]);
 
             stats = { ...orders, ...collections, ...retailers, ...users };
 

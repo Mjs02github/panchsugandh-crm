@@ -15,7 +15,7 @@ export default function StoreOrdersQueue() {
     const fetchOrders = () => {
         setLoading(true);
         api.get('/orders')
-            .then(res => setOrders(res.data.orders || []))
+            .then(res => setOrders(Array.isArray(res.data) ? res.data : []))
             .catch(err => console.error('Failed to load orders', err))
             .finally(() => setLoading(false));
     };

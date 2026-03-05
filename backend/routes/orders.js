@@ -341,12 +341,12 @@ router.patch('/:id/deliver', auth, allowRoles(ROLES.DELIVERY_INCHARGE, ROLES.ADM
         }
 
         const [orders] = await conn.query(
-            "SELECT * FROM sales_orders WHERE id = ? AND status = 'BILLED'",
+            "SELECT * FROM sales_orders WHERE id = ? AND status IN ('BILLED','READY_TO_SHIP')",
             [req.params.id]
         );
         if (!orders.length) {
             await conn.rollback();
-            return res.status(404).json({ error: 'Order not found or not in BILLED status.' });
+            return res.status(404).json({ error: 'Order not found or not ready for delivery.' });
         }
 
         const dDate = delivery_date || new Date().toISOString().slice(0, 10);

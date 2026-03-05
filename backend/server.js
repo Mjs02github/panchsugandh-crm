@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const compression = require('compression');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 
@@ -29,10 +31,35 @@ app.use(cors({
     },
     credentials: true,
 }));
+
+// ── Compression (reduces response size by 60-70%) ────────────
+app.use(compression());
+
+// ── Rate Limiting ─────────────────────────────────────────────
+// Login: max 10 attempts per minute per IP
+const loginLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 10,
+    message: { error: 'Too many login attempts. Please wait a minute and try again.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// General API: max 300 requests per minute per IP
+const apiLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 300,
+    message: { error: 'Too many requests. Please slow down.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ── Routes ──────────────────────────────────────────────────
+app.use('/api/auth/login', loginLimiter);
+app.use('/api', apiLimiter);
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/areas', require('./routes/areas'));
@@ -70,7 +97,12 @@ app.get('*', (req, res) => {
 // ── Global error handler ─────────────────────────────────────
 app.use((err, req, res, next) => {
     console.error('Unhandled error:', err);
-    res.status(500).json({ error: 'Internal server error', detail: err.message });
+    // Never expose stack traces in production
+    const isProd = process.env.NODE_ENV === 'production';
+    res.status(500).json({
+        error: 'Internal server error',
+        ...(isProd ? {} : { detail: err.message }),
+    });
 });
 
 // ── Start ────────────────────────────────────────────────────

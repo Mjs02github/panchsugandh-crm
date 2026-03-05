@@ -11,7 +11,7 @@ const pool = mysql.createPool({
 
     // Connection pool settings
     waitForConnections: true,
-    connectionLimit: 10,    // Hostinger shared plans allow ~10 concurrent connections
+    connectionLimit: 50,    // Increased for higher concurrency (was 10)
     queueLimit: 0,
 
     // Character set + timezone
@@ -61,6 +61,17 @@ pool.getConnection(async (err, conn) => {
             console.log(`✅ stock_inwards table verified`);
         } catch (tableErr) {
             console.error('❌ Failed to run table migrations:', tableErr.message);
+        }
+
+        // Auto-migrate: ensure READY_TO_SHIP is in the status enum
+        try {
+            await conn.promise().query(
+                "ALTER TABLE sales_orders MODIFY COLUMN status ENUM('PENDING','BILLED','READY_TO_SHIP','DELIVERED','CANCELLED','CANCEL_REQUESTED') NOT NULL DEFAULT 'PENDING'"
+            );
+            console.log(`✅ sales_orders status enum verified (READY_TO_SHIP included)`);
+        } catch (enumErr) {
+            // This is safe to ignore if enum is already correct
+            console.warn('⚠️ Enum migration skipped (may already be up to date):', enumErr.message);
         }
 
         conn.release();
