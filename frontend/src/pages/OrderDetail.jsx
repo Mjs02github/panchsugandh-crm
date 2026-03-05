@@ -176,6 +176,14 @@ export default function OrderDetail() {
                     <p className="text-xs text-gray-400 font-mono">{order.order_number}</p>
                 </div>
                 <span className={sc.cls}>{sc.icon} {sc.label}</span>
+                {canPrint && (
+                    <button
+                        onClick={() => window.print()}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg shadow-sm hover:bg-blue-700 transition-colors"
+                    >
+                        🖨️ Print
+                    </button>
+                )}
             </div>
 
             <div className="px-4 pt-4 space-y-3 print:hidden">

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api';
 import BottomNav from '../../components/BottomNav';
+import InvoiceTemplate from '../../components/InvoiceTemplate';
 
 export default function BillingQueue() {
     const [orders, setOrders] = useState([]);
@@ -15,6 +16,7 @@ export default function BillingQueue() {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [lastBilledOrder, setLastBilledOrder] = useState(null); // for print
 
     const [showCancelFor, setShowCancelFor] = useState(null);
     const [cancelReason, setCancelReason] = useState('');
@@ -56,7 +58,16 @@ export default function BillingQueue() {
         setError('');
         try {
             await api.patch(`/orders/${orderId}/bill`, { bill_number: billNum, bill_date: billDate, final_amount: finalAmount });
-            setSuccess('Order marked as BILLED!');
+            // Store billed order info for printing
+            const billedOrder = orders.find(o => o.id === orderId);
+            setLastBilledOrder({
+                ...billedOrder,
+                bill_number: billNum,
+                bill_date: billDate,
+                total_amount: finalAmount || billedOrder?.total_amount,
+                status: 'BILLED',
+            });
+            setSuccess('Order marked as BILLED! You can now print the invoice.');
             setSelected(null);
             setBillNum('');
             setOrderItems([]);
@@ -96,7 +107,19 @@ export default function BillingQueue() {
             </div>
 
             <div className="px-4 py-3 space-y-3">
-                {success && <div className="p-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-xl">{success}</div>}
+                {success && (
+                    <div className="p-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-xl flex items-center justify-between gap-3">
+                        <span>{success}</span>
+                        {lastBilledOrder && (
+                            <button
+                                onClick={() => window.print()}
+                                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white text-xs font-semibold rounded-lg shadow-sm hover:bg-green-700 transition-colors"
+                            >
+                                🖨️ Print Invoice
+                            </button>
+                        )}
+                    </div>
+                )}
                 {error && <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl">{error}</div>}
 
                 {loading ? (
@@ -231,6 +254,15 @@ export default function BillingQueue() {
             )}
 
             <BottomNav />
+
+            {/* Hidden invoice template — only visible when printing */}
+            {lastBilledOrder && (
+                <InvoiceTemplate
+                    order={lastBilledOrder}
+                    items={orderItems}
+                    totalPaid={0}
+                />
+            )}
         </div>
     );
 }
