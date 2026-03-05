@@ -1,132 +1,251 @@
 import React from 'react';
 
-// This component is mostly hidden until print is triggered
-export default function InvoiceTemplate({ order, items, totalPaid }) {
-    if (!order) return null;
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPANY CONFIG — Edit these values to update company details on invoice
+// ─────────────────────────────────────────────────────────────────────────────
+const COMPANY = {
+    name: 'Panchsugandh',
+    tagline: 'Premium Quality Products',
+    address: '123, Main Market, Your City, State - 000000',
+    phone: '+91 99999 99999',
+    email: 'info@panchsugandh.com',
+    gstin: '23AAAAA0000A1Z5',
+    // logo: '/logo.png',  // Uncomment and add path when ready
+};
 
-    const companyName = "Panchsugandh";
-    const companyAddress = "Your Company Address here";
-    const companyGST = "23AAAAA0000A1Z5"; // Placeholder
-    const companyPhone = "+91 9999999999";
+// ─────────────────────────────────────────────────────────────────────────────
+// INVOICE CONFIG — Toggle features on/off easily
+// ─────────────────────────────────────────────────────────────────────────────
+const INVOICE_CONFIG = {
+    showMRP: true,             // Show MRP column in product table
+    showHSN: true,             // Show HSN code column
+    showGST: true,             // Show GST breakdown in totals
+    showDiscount: true,        // Show discount row if applicable
+    showBalanceDue: true,      // Show balance due after payments
+    showSignatures: true,      // Show signature lines at bottom
+    showTerms: true,           // Show terms & conditions
+    terms: [
+        'Goods once sold will not be taken back.',
+        'Payment due within 30 days of invoice date.',
+        'Subject to local jurisdiction.',
+    ],
+    thankYouMessage: 'Thank you for your business! We appreciate your trust.',
+};
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper formatters
+// ─────────────────────────────────────────────────────────────────────────────
+const fmt = (n) => parseFloat(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtDate = (d) => d ? new Date(d.split('T')[0]).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sub-components (for easy future restructuring)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function InvoiceHeader({ order }) {
     const isBilled = ['BILLED', 'READY_TO_SHIP', 'DELIVERED'].includes(order.status);
-    const invoiceNumber = order.bill_number || `EST-${order.order_number}`;
-    const invoiceDate = (order.bill_date || order.order_date).split('T')[0];
-    const totalAmount = parseFloat(order.total_amount || 0);
-    const balanceDue = Math.max(0, totalAmount - (totalPaid || 0));
+    return (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '3px solid #1a1a1a', paddingBottom: '16px', marginBottom: '20px' }}>
+            <div>
+                <div style={{ fontSize: '28px', fontWeight: '900', letterSpacing: '2px', color: '#1a1a1a' }}>{COMPANY.name}</div>
+                <div style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>{COMPANY.tagline}</div>
+                <div style={{ fontSize: '11px', color: '#444', marginTop: '8px', lineHeight: '1.6' }}>
+                    <div>{COMPANY.address}</div>
+                    <div>📞 {COMPANY.phone}  ✉ {COMPANY.email}</div>
+                    <div><strong>GSTIN:</strong> {COMPANY.gstin}</div>
+                </div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '32px', fontWeight: '300', color: '#ccc', letterSpacing: '4px', textTransform: 'uppercase' }}>
+                    {isBilled ? 'TAX INVOICE' : 'ESTIMATE'}
+                </div>
+                <div style={{ marginTop: '10px', fontSize: '12px', lineHeight: '1.8' }}>
+                    <div><span style={{ color: '#888' }}>Invoice No:</span> <strong>{order.bill_number || `EST-${order.order_number}`}</strong></div>
+                    <div><span style={{ color: '#888' }}>Order No:</span> {order.order_number}</div>
+                    <div><span style={{ color: '#888' }}>Date:</span> {fmtDate(order.bill_date || order.order_date)}</div>
+                    {order.status && <div><span style={{ color: '#888' }}>Status:</span> <span style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>{order.status}</span></div>}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function PartySection({ order }) {
+    return (
+        <div style={{ display: 'flex', gap: '32px', marginBottom: '20px' }}>
+            {/* Billed To */}
+            <div style={{ flex: 1, padding: '12px', background: '#f8f8f8', borderRadius: '6px', borderLeft: '4px solid #1a1a1a' }}>
+                <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#888', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '1px' }}>Billed To</div>
+                <div style={{ fontWeight: 'bold', fontSize: '15px', color: '#1a1a1a' }}>{order.retailer_name}</div>
+                {order.retailer_address && <div style={{ fontSize: '11px', color: '#555', marginTop: '4px' }}>{order.retailer_address}</div>}
+                {order.area_name && <div style={{ fontSize: '11px', color: '#555' }}>Area: {order.area_name}</div>}
+                {order.retailer_phone && <div style={{ fontSize: '11px', color: '#555', marginTop: '4px' }}>📞 {order.retailer_phone}</div>}
+                {order.gst_number && <div style={{ fontSize: '11px', color: '#555', marginTop: '2px' }}>GSTIN: <strong>{order.gst_number}</strong></div>}
+            </div>
+            {/* Order Meta */}
+            <div style={{ width: '180px', padding: '12px', background: '#f8f8f8', borderRadius: '6px' }}>
+                <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#888', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '1px' }}>Sales Info</div>
+                {order.salesperson_name && <div style={{ fontSize: '11px', color: '#555' }}>Salesperson: <strong>{order.salesperson_name}</strong></div>}
+                {order.order_date && <div style={{ fontSize: '11px', color: '#555', marginTop: '4px' }}>Order Date: {fmtDate(order.order_date)}</div>}
+                {order.billed_by_name && <div style={{ fontSize: '11px', color: '#555', marginTop: '4px' }}>Billed By: {order.billed_by_name}</div>}
+            </div>
+        </div>
+    );
+}
+
+function ItemsTable({ items }) {
+    const visibleItems = (items || []).filter(item => {
+        const qty = item.qty_billed != null ? item.qty_billed : item.qty_ordered;
+        return qty > 0;
+    });
+
+    const thStyle = { padding: '8px 6px', fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #1a1a1a', background: '#1a1a1a', color: '#fff' };
+    const tdStyle = { padding: '7px 6px', fontSize: '12px', borderBottom: '1px solid #e0e0e0', verticalAlign: 'middle' };
 
     return (
-        <div className="invoice-print-container bg-white p-8 hidden print:block text-black" style={{ width: '210mm', minHeight: '297mm', margin: '0 auto' }}>
-            {/* Header */}
-            <div className="flex justify-between items-start border-b-2 border-gray-800 pb-4 mb-6">
-                <div>
-                    <h1 className="text-3xl font-bold uppercase tracking-wider">{companyName}</h1>
-                    <p className="text-sm mt-1">{companyAddress}</p>
-                    <p className="text-sm">GSTIN: <span className="font-semibold">{companyGST}</span></p>
-                    <p className="text-sm">Phone: {companyPhone}</p>
-                </div>
-                <div className="text-right">
-                    <h2 className="text-4xl font-light text-gray-400 uppercase tracking-widest">{isBilled ? 'TAX INVOICE' : 'ESTIMATE'}</h2>
-                    <div className="mt-4">
-                        <p className="text-sm"><span className="font-semibold text-gray-600">Invoice No:</span> {invoiceNumber}</p>
-                        <p className="text-sm mt-1"><span className="font-semibold text-gray-600">Date:</span> {new Date(invoiceDate).toLocaleDateString('en-IN')}</p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Bill To */}
-            <div className="mb-8">
-                <h3 className="text-sm font-bold text-gray-800 border-b border-gray-300 pb-1 mb-2">Billed To:</h3>
-                <p className="font-bold text-lg">{order.retailer_name}</p>
-                <p className="text-sm mt-1 max-w-sm">{order.retailer_address || order.area_name}</p>
-                {order.retailer_phone && <p className="text-sm mt-1">Phone: {order.retailer_phone}</p>}
-                {order.gst_number && <p className="text-sm mt-1 font-semibold">GSTIN: {order.gst_number}</p>}
-            </div>
-
-            {/* Items Table */}
-            <table className="w-full text-left border-collapse mb-8">
-                <thead>
-                    <tr className="border-b-2 border-gray-800">
-                        <th className="py-2 font-bold text-sm">S.No</th>
-                        <th className="py-2 font-bold text-sm">Item & Description</th>
-                        <th className="py-2 font-bold text-sm text-center">HSN</th>
-                        <th className="py-2 font-bold text-sm text-right">Qty</th>
-                        <th className="py-2 font-bold text-sm text-right">Rate</th>
-                        <th className="py-2 font-bold text-sm text-right">Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {items && items.map((item, index) => {
-                        const qty = item.qty_billed !== null ? item.qty_billed : item.qty_ordered;
-                        if (qty === 0) return null; // skip items removed during billing
-
-                        return (
-                            <tr key={item.id || index} className="border-b border-gray-200">
-                                <td className="py-2 text-sm text-gray-600">{index + 1}</td>
-                                <td className="py-2">
-                                    <p className="font-medium text-sm">{item.product_name}</p>
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '16px' }}>
+            <thead>
+                <tr>
+                    <th style={{ ...thStyle, textAlign: 'center', width: '36px' }}>#</th>
+                    <th style={{ ...thStyle }}>Product Name</th>
+                    {INVOICE_CONFIG.showHSN && <th style={{ ...thStyle, textAlign: 'center', width: '70px' }}>HSN</th>}
+                    <th style={{ ...thStyle, textAlign: 'center', width: '50px' }}>Unit</th>
+                    <th style={{ ...thStyle, textAlign: 'right', width: '60px' }}>Qty</th>
+                    {INVOICE_CONFIG.showMRP && <th style={{ ...thStyle, textAlign: 'right', width: '80px' }}>MRP (₹)</th>}
+                    <th style={{ ...thStyle, textAlign: 'right', width: '80px' }}>Rate (₹)</th>
+                    <th style={{ ...thStyle, textAlign: 'right', width: '90px' }}>Amount (₹)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {visibleItems.map((item, idx) => {
+                    const qty = item.qty_billed != null ? item.qty_billed : item.qty_ordered;
+                    const rowBg = idx % 2 === 0 ? '#fff' : '#fafafa';
+                    return (
+                        <tr key={item.id || idx} style={{ background: rowBg }}>
+                            <td style={{ ...tdStyle, textAlign: 'center', color: '#888' }}>{idx + 1}</td>
+                            <td style={{ ...tdStyle }}>
+                                <div style={{ fontWeight: '600', color: '#1a1a1a' }}>{item.product_name}</div>
+                                {item.sku && <div style={{ fontSize: '10px', color: '#aaa' }}>SKU: {item.sku}</div>}
+                            </td>
+                            {INVOICE_CONFIG.showHSN && <td style={{ ...tdStyle, textAlign: 'center', color: '#666', fontSize: '11px' }}>{item.hsn_code || '—'}</td>}
+                            <td style={{ ...tdStyle, textAlign: 'center', color: '#666', fontSize: '11px' }}>{item.unit || 'PCS'}</td>
+                            <td style={{ ...tdStyle, textAlign: 'right', fontWeight: '600' }}>{qty}</td>
+                            {INVOICE_CONFIG.showMRP && (
+                                <td style={{ ...tdStyle, textAlign: 'right', color: '#888' }}>
+                                    {item.mrp ? `₹${fmt(item.mrp)}` : '—'}
                                 </td>
-                                <td className="py-2 text-sm text-center text-gray-600">{item.hsn_code || '-'}</td>
-                                <td className="py-2 text-sm text-right">{qty} {item.unit || 'PCS'}</td>
-                                <td className="py-2 text-sm text-right">₹{parseFloat(item.unit_price).toLocaleString('en-IN')}</td>
-                                <td className="py-2 text-sm text-right">₹{parseFloat(item.line_amount).toLocaleString('en-IN')}</td>
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
+                            )}
+                            <td style={{ ...tdStyle, textAlign: 'right' }}>₹{fmt(item.unit_price)}</td>
+                            <td style={{ ...tdStyle, textAlign: 'right', fontWeight: '600' }}>₹{fmt(item.line_amount)}</td>
+                        </tr>
+                    );
+                })}
+                {visibleItems.length === 0 && (
+                    <tr><td colSpan="8" style={{ textAlign: 'center', padding: '20px', color: '#aaa', fontSize: '12px' }}>No items</td></tr>
+                )}
+            </tbody>
+        </table>
+    );
+}
 
-            {/* Footer / Totals */}
-            <div className="flex justify-end border-t-2 border-gray-800 pt-4">
-                <div className="w-64 space-y-2">
-                    <div className="flex justify-between text-sm">
-                        <span className="font-semibold text-gray-600">Subtotal:</span>
-                        <span>₹{parseFloat(order.subtotal || totalAmount).toLocaleString('en-IN')}</span>
+function TotalsBlock({ order, totalPaid }) {
+    const subtotal = parseFloat(order.subtotal || order.total_amount || 0);
+    const discount = parseFloat(order.discount || 0);
+    const gstAmount = parseFloat(order.gst_amount || 0);
+    const grandTotal = parseFloat(order.total_amount || 0);
+    const balanceDue = Math.max(0, grandTotal - (totalPaid || 0));
+
+    const rowStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', fontSize: '13px' };
+    const labelStyle = { color: '#555' };
+    const valStyle = { fontWeight: '500' };
+
+    return (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
+            <div style={{ width: '240px', padding: '14px', border: '1px solid #ddd', borderRadius: '8px', background: '#fafafa' }}>
+                {INVOICE_CONFIG.showDiscount && discount > 0 && (
+                    <div style={rowStyle}>
+                        <span style={labelStyle}>Subtotal:</span>
+                        <span style={valStyle}>₹{fmt(subtotal)}</span>
                     </div>
-                    {parseFloat(order.discount) > 0 && (
-                        <div className="flex justify-between text-sm">
-                            <span className="font-semibold text-gray-600">Discount:</span>
-                            <span>- ₹{parseFloat(order.discount).toLocaleString('en-IN')}</span>
+                )}
+                {INVOICE_CONFIG.showDiscount && discount > 0 && (
+                    <div style={rowStyle}>
+                        <span style={labelStyle}>Discount:</span>
+                        <span style={{ ...valStyle, color: '#e53e3e' }}>- ₹{fmt(discount)}</span>
+                    </div>
+                )}
+                {INVOICE_CONFIG.showGST && gstAmount > 0 && (
+                    <div style={rowStyle}>
+                        <span style={labelStyle}>GST:</span>
+                        <span style={valStyle}>₹{fmt(gstAmount)}</span>
+                    </div>
+                )}
+                {/* Grand Total */}
+                <div style={{ borderTop: '2px solid #1a1a1a', marginTop: '8px', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '15px', fontWeight: 'bold' }}>TOTAL AMOUNT:</span>
+                    <span style={{ fontSize: '18px', fontWeight: '900', color: '#1a1a1a' }}>₹{fmt(grandTotal)}</span>
+                </div>
+                {INVOICE_CONFIG.showBalanceDue && totalPaid > 0 && (
+                    <>
+                        <div style={{ ...rowStyle, marginTop: '8px', borderTop: '1px solid #ddd', paddingTop: '8px' }}>
+                            <span style={labelStyle}>Amount Paid:</span>
+                            <span style={{ ...valStyle, color: '#38a169' }}>₹{fmt(totalPaid)}</span>
                         </div>
-                    )}
-                    {parseFloat(order.gst_amount) > 0 && (
-                        <div className="flex justify-between text-sm">
-                            <span className="font-semibold text-gray-600">Total GST:</span>
-                            <span>₹{parseFloat(order.gst_amount).toLocaleString('en-IN')}</span>
+                        <div style={{ ...rowStyle, fontWeight: 'bold' }}>
+                            <span>Balance Due:</span>
+                            <span style={{ color: balanceDue > 0 ? '#e53e3e' : '#38a169' }}>₹{fmt(balanceDue)}</span>
                         </div>
-                    )}
-                    <div className="flex justify-between text-lg font-bold border-t border-gray-300 pt-2 mt-2">
-                        <span>Grand Total:</span>
-                        <span>₹{totalAmount.toLocaleString('en-IN')}</span>
-                    </div>
-                    <div className="flex justify-between text-sm text-gray-600 border-t border-gray-300 pt-2 mt-2">
-                        <span>Amount Paid:</span>
-                        <span>₹{parseFloat(totalPaid || 0).toLocaleString('en-IN')}</span>
-                    </div>
-                    <div className="flex justify-between text-sm font-bold text-gray-800 pt-1 mt-1">
-                        <span>Balance Due:</span>
-                        <span>₹{balanceDue.toLocaleString('en-IN')}</span>
-                    </div>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function SignatureBlock() {
+    if (!INVOICE_CONFIG.showSignatures) return null;
+    return (
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '40px', paddingTop: '20px' }}>
+            <div style={{ textAlign: 'center', width: '160px' }}>
+                <div style={{ borderTop: '1px solid #888', paddingTop: '8px', fontSize: '12px' }}>Customer Signature</div>
+            </div>
+            <div style={{ textAlign: 'center', width: '160px' }}>
+                <div style={{ borderTop: '1px solid #888', paddingTop: '8px', fontSize: '12px' }}>
+                    <div>Authorised Signatory</div>
+                    <div style={{ fontSize: '10px', color: '#888' }}>For {COMPANY.name}</div>
                 </div>
             </div>
+        </div>
+    );
+}
 
-            {/* Signatures */}
-            <div className="mt-24 flex justify-between">
-                <div className="text-center w-48">
-                    <div className="border-t border-gray-400 mt-8 pt-2">
-                        <p className="text-sm font-medium">Customer Signature</p>
-                    </div>
-                </div>
-                <div className="text-center w-48">
-                    <div className="border-t border-gray-400 mt-8 pt-2">
-                        <p className="text-sm font-medium">Authorised Signatory</p>
-                        <p className="text-xs text-gray-500">For {companyName}</p>
-                    </div>
-                </div>
-            </div>
+function TermsBlock() {
+    if (!INVOICE_CONFIG.showTerms || !INVOICE_CONFIG.terms.length) return null;
+    return (
+        <div style={{ marginTop: '24px', padding: '10px 14px', background: '#f8f8f8', borderRadius: '6px', borderTop: '2px solid #e0e0e0' }}>
+            <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#888', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>Terms & Conditions</div>
+            {INVOICE_CONFIG.terms.map((t, i) => (
+                <div key={i} style={{ fontSize: '10px', color: '#666', marginBottom: '2px' }}>{i + 1}. {t}</div>
+            ))}
+        </div>
+    );
+}
 
-            <div className="mt-12 text-center text-xs text-gray-400 pb-8">
-                Thank you for your business!
+// ─────────────────────────────────────────────────────────────────────────────
+// Main exported component — assembles all sections
+// ─────────────────────────────────────────────────────────────────────────────
+export default function InvoiceTemplate({ order, items, totalPaid }) {
+    if (!order) return null;
+    return (
+        <div className="invoice-print-container hidden print:block" style={{ width: '210mm', minHeight: '297mm', margin: '0 auto', background: '#fff', color: '#1a1a1a', fontFamily: 'Arial, sans-serif', padding: '20mm 16mm' }}>
+            <InvoiceHeader order={order} />
+            <PartySection order={order} />
+            <ItemsTable items={items} />
+            <TotalsBlock order={order} totalPaid={totalPaid} />
+            {INVOICE_CONFIG.showSignatures && <SignatureBlock />}
+            <TermsBlock />
+            <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '11px', color: '#aaa', borderTop: '1px solid #eee', paddingTop: '12px' }}>
+                {INVOICE_CONFIG.thankYouMessage}
             </div>
         </div>
     );

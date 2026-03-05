@@ -106,7 +106,7 @@ router.get('/:id', auth, allowRoles(...ALL_ORDER_ROLES), async (req, res) => {
         if (!orders.length) return res.status(404).json({ error: 'Order not found.' });
 
         const [items] = await db.query(
-            `SELECT oi.*, p.name AS product_name, p.unit, p.sku
+            `SELECT oi.*, p.name AS product_name, p.unit, p.sku, p.mrp
        FROM order_items oi
        JOIN products p ON oi.product_id = p.id
        WHERE oi.order_id = ?`,
