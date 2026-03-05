@@ -28,7 +28,7 @@ router.post('/', auth, allowRoles(ROLES.SALESPERSON, ROLES.SALES_OFFICER), async
 router.get('/live', auth, allowRoles(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.SALES_OFFICER), async (req, res) => {
     try {
         const [rows] = await db.query(
-            `SELECT salesperson_id, MAX(timestamp) AS last_ping_at 
+            `SELECT salesperson_id, MAX(\`timestamp\`) AS last_ping_at 
              FROM salesperson_locations 
              GROUP BY salesperson_id`
         );
@@ -52,10 +52,10 @@ router.get('/history/:salesperson_id', auth, allowRoles(ROLES.SUPER_ADMIN, ROLES
         }
 
         const [rows] = await db.query(
-            `SELECT latitude, longitude, timestamp
+            `SELECT latitude, longitude, \`timestamp\`
              FROM salesperson_locations
-             WHERE salesperson_id = ? AND DATE(timestamp) = ?
-             ORDER BY timestamp ASC`,
+             WHERE salesperson_id = ? AND DATE(\`timestamp\`) = ?
+             ORDER BY \`timestamp\` ASC`,
             [salesperson_id, queryDate]
         );
         res.json(rows);
