@@ -9,6 +9,7 @@ const TABS = [
     { key: 'party', label: '🏪 Party-wise', endpoint: '/reports/party-wise' },
     { key: 'date', label: '📅 Date-wise', endpoint: '/reports/date-wise' },
     { key: 'salesman', label: '👤 Salesman-wise', endpoint: '/reports/salesman-wise' },
+    { key: 'attendance', label: '🕒 Attendance', endpoint: '/reports/attendance', adminOnly: true },
 ];
 
 export default function Reports() {
@@ -27,7 +28,9 @@ export default function Reports() {
 
     const isSalesperson = user?.role === 'salesperson';
     // If salesperson, only show master tab (their own data)
-    const visibleTabs = isSalesperson ? TABS.filter(t => t.key === 'master') : TABS;
+    const visibleTabs = isSalesperson
+        ? TABS.filter(t => t.key === 'master')
+        : TABS.filter(t => !t.adminOnly || ['admin', 'super_admin', 'sales_officer'].includes(user?.role));
 
     const currentTab = TABS.find(t => t.key === activeTab);
 

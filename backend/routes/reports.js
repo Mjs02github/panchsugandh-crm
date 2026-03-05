@@ -302,4 +302,62 @@ router.get('/salesman-wise', auth, allowRoles(...REPORT_ROLES), async (req, res)
     }
 });
 
+// ─────────────────────────────────────────────────────────
+// GET /api/reports/attendance
+// ─────────────────────────────────────────────────────────
+router.get('/attendance', auth, allowRoles(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.SALES_OFFICER), async (req, res) => {
+    try {
+        const { from, to } = getDateRange(req.query);
+
+        // Sales officer sees only their team
+        let userFilter = '';
+        const params = [from, to];
+        if (req.user.role === ROLES.SALES_OFFICER) {
+            userFilter = 'AND u.manager_id = ?';
+            params.push(req.user.id);
+        }
+
+        const [rows] = await db.query(
+            `SELECT
+                DATE_FORMAT(a.date, '%Y-%m-%d') AS Date,
+                u.name AS Salesman,
+                ro.name AS Role,
+                TIME_FORMAT(a.punch_in_time, '%H:%i') AS 'Punch In',
+                TIME_FORMAT(a.punch_out_time, '%H:%i') AS 'Punch Out',
+                CASE
+                    WHEN a.punch_out_time IS NOT NULL
+                    THEN CONCAT(
+                        FLOOR(TIMESTAMPDIFF(MINUTE, a.punch_in_time, a.punch_out_time) / 60), 'h ',
+                        MOD(TIMESTAMPDIFF(MINUTE, a.punch_in_time, a.punch_out_time), 60), 'm'
+                    )
+                    ELSE 'Still In'
+                END AS 'Hours Worked',
+                CASE WHEN a.punch_out_time IS NOT NULL THEN 'Present' ELSE 'In-Office' END AS Status
+            FROM attendance a
+            JOIN users u ON a.user_id = u.id
+            JOIN roles ro ON u.role_id = ro.id
+            WHERE a.date BETWEEN ? AND ?
+                ${userFilter}
+            ORDER BY a.date DESC, u.name`,
+            params
+        );
+
+        if (req.query.format === 'excel') {
+            const workbook = new ExcelJS.Workbook();
+            workbook.creator = 'Panchsugandh CRM';
+            const sheet = workbook.addWorksheet('Attendance Report');
+            if (rows.length > 0) {
+                sheet.columns = Object.keys(rows[0]).map(key => ({ header: key, key, width: 22 }));
+                styleHeaderRow(sheet, sheet.getRow(1));
+                rows.forEach(row => { sheet.addRow(Object.values(row)).height = 18; });
+            }
+            return sendExcel(res, workbook, `Attendance_Report_${from}_to_${to}.xlsx`);
+        }
+        res.json({ data: rows, from, to });
+    } catch (err) {
+        console.error('Attendance report error:', err);
+        res.status(500).json({ error: 'Server error.' });
+    }
+});
+
 module.exports = router;
