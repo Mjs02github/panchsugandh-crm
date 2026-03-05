@@ -16,7 +16,7 @@ const pool = mysql.createPool({
 
     // Character set + timezone
     charset: 'utf8mb4',
-    timezone: '+05:30',        // IST
+    timezone: 'Z',        // Treat DB DATETIME as UTC so frontend converts it accurately
 
     // Keep-alive: prevents Hostinger from dropping idle connections
     enableKeepAlive: true,
