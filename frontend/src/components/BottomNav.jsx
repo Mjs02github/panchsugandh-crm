@@ -8,6 +8,7 @@ const NAV_CONFIG = {
         { label: 'Payments', icon: '💰', path: '/payments' },
         { label: 'Parties', icon: '🏪', path: '/store/retailers' }, // ← NEW
         { label: 'Visits', icon: '🗺️', path: '/visits' },
+        { label: 'Reports', icon: '📊', path: '/reports' },
     ],
     bill_operator: [
         { label: 'Queue', icon: '📄', path: '/billing' },
@@ -28,6 +29,7 @@ const NAV_CONFIG = {
         { label: 'Team', icon: '👥', path: '/team' },
         { label: 'Orders', icon: '📋', path: '/orders' },
         { label: 'Visits', icon: '🗺️', path: '/visits' },
+        { label: 'Reports', icon: '📊', path: '/reports' },
     ],
     admin: [
         { label: 'Dashboard', icon: '📊', path: '/dashboard' },
@@ -36,6 +38,7 @@ const NAV_CONFIG = {
         { label: 'Users', icon: '👤', path: '/admin/users' },
         { label: 'Tracking', icon: '📍', path: '/admin/tracking' },
         { label: 'Attendance', icon: '🕒', path: '/admin/attendance' },
+        { label: 'Reports', icon: '📊', path: '/reports' },
     ],
     super_admin: [
         { label: 'Dashboard', icon: '📊', path: '/dashboard' },
@@ -44,6 +47,7 @@ const NAV_CONFIG = {
         { label: 'Users', icon: '👤', path: '/admin/users' },
         { label: 'Tracking', icon: '📍', path: '/admin/tracking' },
         { label: 'Attendance', icon: '🕒', path: '/admin/attendance' },
+        { label: 'Reports', icon: '📊', path: '/reports' },
     ],
 };
 
