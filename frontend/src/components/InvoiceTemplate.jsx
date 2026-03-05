@@ -10,7 +10,20 @@ const COMPANY = {
     phone: '+91 99999 99999',
     email: 'info@panchsugandh.com',
     gstin: '23AAAAA0000A1Z5',
-    // logo: '/logo.png',  // Uncomment and add path when ready
+    logoUrl: '/assets/images/logo.jpeg', // Logo path
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PAYMENT DETAILS CONFIG — Displayed at the bottom of the invoice
+// ─────────────────────────────────────────────────────────────────────────────
+const PAYMENT_DETAILS = {
+    show: true,
+    bankName: '[Your Bank Name]',
+    accountName: '[Your Account Name]',
+    accountNumber: '[Your Account Number]',
+    ifscCode: '[Your IFSC Code]',
+    upiId: '[Your UPI ID]',
+    qrCodeUrl: '', // Add a QR code image URL here (e.g., '/images/qr.png' or base64)
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -46,13 +59,18 @@ function InvoiceHeader({ order }) {
     const isBilled = ['BILLED', 'READY_TO_SHIP', 'DELIVERED'].includes(order.status);
     return (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '3px solid #1a1a1a', paddingBottom: '16px', marginBottom: '20px' }}>
-            <div>
-                <div style={{ fontSize: '28px', fontWeight: '900', letterSpacing: '2px', color: '#1a1a1a' }}>{COMPANY.name}</div>
-                <div style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>{COMPANY.tagline}</div>
-                <div style={{ fontSize: '11px', color: '#444', marginTop: '8px', lineHeight: '1.6' }}>
-                    <div>{COMPANY.address}</div>
-                    <div>📞 {COMPANY.phone}  ✉ {COMPANY.email}</div>
-                    <div><strong>GSTIN:</strong> {COMPANY.gstin}</div>
+            <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+                {COMPANY.logoUrl && (
+                    <img src={COMPANY.logoUrl} alt="Logo" style={{ maxHeight: '80px', maxWidth: '200px', objectFit: 'contain' }} onError={(e) => e.target.style.display = 'none'} />
+                )}
+                <div>
+                    <div style={{ fontSize: '28px', fontWeight: '900', letterSpacing: '2px', color: '#1a1a1a' }}>{COMPANY.name}</div>
+                    <div style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>{COMPANY.tagline}</div>
+                    <div style={{ fontSize: '11px', color: '#444', marginTop: '8px', lineHeight: '1.6' }}>
+                        <div>{COMPANY.address}</div>
+                        <div>📞 {COMPANY.phone}  ✉ {COMPANY.email}</div>
+                        <div><strong>GSTIN:</strong> {COMPANY.gstin}</div>
+                    </div>
                 </div>
             </div>
             <div style={{ textAlign: 'right' }}>
@@ -202,10 +220,33 @@ function TotalsBlock({ order, totalPaid }) {
     );
 }
 
+function PaymentDetailsBlock() {
+    if (!PAYMENT_DETAILS.show) return null;
+    return (
+        <div style={{ padding: '12px', background: '#f8f8f8', borderRadius: '6px', borderTop: '2px solid #e0e0e0', marginBottom: '20px', display: 'flex', gap: '24px', alignItems: 'center' }}>
+            <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#888', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>Payment Details</div>
+                <div style={{ fontSize: '11px', color: '#444', lineHeight: '1.6' }}>
+                    <div><strong>Bank:</strong> {PAYMENT_DETAILS.bankName}</div>
+                    <div><strong>Axc Name:</strong> {PAYMENT_DETAILS.accountName}</div>
+                    <div><strong>A/c No:</strong> {PAYMENT_DETAILS.accountNumber}</div>
+                    <div><strong>IFSC:</strong> {PAYMENT_DETAILS.ifscCode}</div>
+                    <div><strong>UPI ID:</strong> {PAYMENT_DETAILS.upiId}</div>
+                </div>
+            </div>
+            {PAYMENT_DETAILS.qrCodeUrl && (
+                <div style={{ width: '80px', height: '80px', flexShrink: 0 }}>
+                    <img src={PAYMENT_DETAILS.qrCodeUrl} alt="QR Code" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                </div>
+            )}
+        </div>
+    );
+}
+
 function SignatureBlock() {
     if (!INVOICE_CONFIG.showSignatures) return null;
     return (
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '40px', paddingTop: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px', paddingTop: '20px' }}>
             <div style={{ textAlign: 'center', width: '160px' }}>
                 <div style={{ borderTop: '1px solid #888', paddingTop: '8px', fontSize: '12px' }}>Customer Signature</div>
             </div>
@@ -242,6 +283,7 @@ export default function InvoiceTemplate({ order, items, totalPaid }) {
             <PartySection order={order} />
             <ItemsTable items={items} />
             <TotalsBlock order={order} totalPaid={totalPaid} />
+            <PaymentDetailsBlock />
             {INVOICE_CONFIG.showSignatures && <SignatureBlock />}
             <TermsBlock />
             <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '11px', color: '#aaa', borderTop: '1px solid #eee', paddingTop: '12px' }}>
