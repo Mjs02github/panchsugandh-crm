@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -8,30 +9,30 @@ const NAV_CONFIG = {
         { label: 'Payments', icon: '💰', path: '/payments' },
         { label: 'Parties', icon: '🏪', path: '/store/retailers' },
         { label: 'Reports', icon: '📊', path: '/reports' },
-        { label: 'Chat', icon: '💬', path: '/chat' },
+        { label: 'Chat', icon: '💬', path: '/chat', badge: true },
     ],
     bill_operator: [
         { label: 'Queue', icon: '📄', path: '/billing' },
         { label: 'Parties', icon: '🏪', path: '/store/retailers' },
         { label: 'Products', icon: '📦', path: '/store/products' },
-        { label: 'Chat', icon: '💬', path: '/chat' },
+        { label: 'Chat', icon: '💬', path: '/chat', badge: true },
     ],
     delivery_incharge: [
         { label: 'Pending', icon: '🚚', path: '/delivery' },
         { label: 'Done', icon: '✅', path: '/delivery/history' },
-        { label: 'Chat', icon: '💬', path: '/chat' },
+        { label: 'Chat', icon: '💬', path: '/chat', badge: true },
     ],
     store_incharge: [
         { label: 'Orders', icon: '📋', path: '/store/orders' },
         { label: 'Retailers', icon: '🏪', path: '/store/retailers' },
         { label: 'Products', icon: '📦', path: '/store/products' },
-        { label: 'Chat', icon: '💬', path: '/chat' },
+        { label: 'Chat', icon: '💬', path: '/chat', badge: true },
     ],
     sales_officer: [
         { label: 'Team', icon: '👥', path: '/team' },
         { label: 'Orders', icon: '📋', path: '/orders' },
         { label: 'Reports', icon: '📊', path: '/reports' },
-        { label: 'Chat', icon: '💬', path: '/chat' },
+        { label: 'Chat', icon: '💬', path: '/chat', badge: true },
     ],
     admin: [
         { label: 'Dashboard', icon: '📊', path: '/dashboard' },
@@ -39,7 +40,7 @@ const NAV_CONFIG = {
         { label: 'Users', icon: '👤', path: '/admin/users' },
         { label: 'Tracking', icon: '📍', path: '/admin/tracking' },
         { label: 'Reports', icon: '📊', path: '/reports' },
-        { label: 'Chat', icon: '💬', path: '/chat' },
+        { label: 'Chat', icon: '💬', path: '/chat', badge: true },
     ],
     super_admin: [
         { label: 'Dashboard', icon: '📊', path: '/dashboard' },
@@ -47,7 +48,7 @@ const NAV_CONFIG = {
         { label: 'Users', icon: '👤', path: '/admin/users' },
         { label: 'Tracking', icon: '📍', path: '/admin/tracking' },
         { label: 'Reports', icon: '📊', path: '/reports' },
-        { label: 'Chat', icon: '💬', path: '/chat' },
+        { label: 'Chat', icon: '💬', path: '/chat', badge: true },
     ],
 };
 
@@ -55,6 +56,15 @@ export default function BottomNav() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const { pathname } = useLocation();
+    const [chatUnread, setChatUnread] = useState(0);
+
+    // Poll localStorage for unread count (updated by Chat.jsx)
+    useEffect(() => {
+        const read = () => setChatUnread(parseInt(localStorage.getItem('chat_unreadCount') || '0'));
+        read();
+        const t = setInterval(read, 5000);
+        return () => clearInterval(t);
+    }, []);
 
     const items = NAV_CONFIG[user?.role] || [];
 
@@ -66,7 +76,14 @@ export default function BottomNav() {
                     className={`nav-item ${pathname.startsWith(item.path) && item.path !== '/' ? 'active' : ''}`}
                     onClick={() => navigate(item.path)}
                 >
-                    <span className="text-xl leading-none">{item.icon}</span>
+                    <span className="relative text-xl leading-none inline-block">
+                        {item.icon}
+                        {item.badge && chatUnread > 0 && !pathname.startsWith(item.path) && (
+                            <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center leading-none">
+                                {chatUnread > 99 ? '99+' : chatUnread}
+                            </span>
+                        )}
+                    </span>
                     <span className="text-[10px] mt-0.5">{item.label}</span>
                 </button>
             ))}

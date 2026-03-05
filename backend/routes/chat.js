@@ -21,6 +21,7 @@ router.get('/channels', auth, async (req, res) => {
                 u1.name AS user1_name,
                 u2.name AS user2_name,
                 so.order_number,
+                (SELECT id FROM chat_messages WHERE channel_id = c.id ORDER BY created_at DESC LIMIT 1) AS last_message_id,
                 (SELECT message FROM chat_messages WHERE channel_id = c.id ORDER BY created_at DESC LIMIT 1) AS last_message,
                 (SELECT created_at FROM chat_messages WHERE channel_id = c.id ORDER BY created_at DESC LIMIT 1) AS last_message_at,
                 (SELECT un.name FROM chat_messages cm JOIN users un ON cm.sender_id = un.id WHERE cm.channel_id = c.id ORDER BY cm.created_at DESC LIMIT 1) AS last_sender

@@ -22,9 +22,28 @@ function fmtTime(dt) {
         return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
     return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
 }
-
 function initials(name = '') {
     return name.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase()).join('');
+}
+
+// ── Unread helpers (localStorage-based) ───────────────────
+const getLastRead = (channelId) => parseInt(localStorage.getItem(`chat_read_${channelId}`) || '0');
+const markRead = (channelId, lastMsgId) => {
+    if (lastMsgId) localStorage.setItem(`chat_read_${channelId}`, String(lastMsgId));
+};
+const computeUnread = (channels) => channels.filter(ch => ch.last_message_id && ch.last_message_id > getLastRead(ch.id)).length;
+const saveUnreadCount = (channels) => {
+    localStorage.setItem('chat_unreadCount', String(computeUnread(channels)));
+};
+
+// ── Unread badge dot ───────────────────────────────────────
+function UnreadBadge({ count }) {
+    if (!count) return null;
+    return (
+        <span className="min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none">
+            {count > 99 ? '99+' : count}
+        </span>
+    );
 }
 
 // ── Order Picker Modal ─────────────────────────────────────
@@ -76,9 +95,8 @@ function NewChannelModal({ onCreated, onClose }) {
             if (linkedOrder) payload.order_id = linkedOrder.id;
             const res = await api.post('/chat/channels', payload);
             onCreated(res.data);
-        } catch (err) {
-            setError(err.response?.data?.error || 'Failed.');
-        } finally { setCreating(false); }
+        } catch (err) { setError(err.response?.data?.error || 'Failed.'); }
+        finally { setCreating(false); }
     };
     return (
         <>
@@ -129,7 +147,7 @@ function NewChannelModal({ onCreated, onClose }) {
 }
 
 // ── User Picker for DMs ────────────────────────────────────
-function UserPicker({ currentUserId, onSelect, onClose }) {
+function UserPicker({ onSelect, onClose }) {
     const [users, setUsers] = useState([]);
     const [q, setQ] = useState('');
     const [loading, setLoading] = useState(true);
@@ -155,7 +173,7 @@ function UserPicker({ currentUserId, onSelect, onClose }) {
                             </div>
                             <div>
                                 <p className="font-semibold text-sm text-gray-800">{u.name}</p>
-                                <p className="text-[10px] text-gray-400 capitalize">{u.role?.replace('_', ' ')}</p>
+                                <p className="text-[10px] text-gray-400 capitalize">{u.role?.replace(/_/g, ' ')}</p>
                             </div>
                         </button>
                     ))}
@@ -169,8 +187,7 @@ function UserPicker({ currentUserId, onSelect, onClose }) {
 export default function Chat() {
     const { user } = useAuth();
     const navigate = useNavigate();
-    const [tab, setTab] = useState('channels'); // 'channels' | 'people'
-
+    const [tab, setTab] = useState('channels');
     const [channels, setChannels] = useState([]);
     const [activeChannel, setActiveChannel] = useState(null);
     const [messages, setMessages] = useState([]);
@@ -184,10 +201,18 @@ export default function Chat() {
     const inputRef = useRef(null);
 
     const loadChannels = useCallback(() => {
-        api.get('/chat/channels').then(r => setChannels(r.data)).catch(() => { });
+        api.get('/chat/channels').then(r => {
+            setChannels(r.data);
+            saveUnreadCount(r.data); // update nav badge
+        }).catch(() => { });
     }, []);
 
-    useEffect(() => { loadChannels(); }, [loadChannels]);
+    useEffect(() => {
+        loadChannels();
+        // Refresh channel list every 30s (updates unread counts even when on list page)
+        const t = setInterval(loadChannels, 30000);
+        return () => clearInterval(t);
+    }, [loadChannels]);
 
     const fetchMessages = useCallback(async (channelId, initial = false) => {
         try {
@@ -196,7 +221,14 @@ export default function Chat() {
             const newMsgs = res.data;
             if (newMsgs.length > 0) {
                 lastIdRef.current = newMsgs[newMsgs.length - 1].id;
+                markRead(channelId, lastIdRef.current);
                 setMessages(prev => initial ? newMsgs : [...prev, ...newMsgs]);
+                // Update unread count after reading
+                setChannels(prev => {
+                    const updated = prev.map(c => c.id === channelId ? { ...c, last_message_id: lastIdRef.current } : c);
+                    saveUnreadCount(updated);
+                    return updated;
+                });
             }
         } catch { }
     }, []);
@@ -205,6 +237,13 @@ export default function Chat() {
         if (!activeChannel) return;
         lastIdRef.current = 0;
         setMessages([]);
+        // Mark as read immediately on open
+        markRead(activeChannel.id, activeChannel.last_message_id);
+        setChannels(prev => {
+            const updated = prev.map(c => c.id === activeChannel.id ? { ...c, last_message_id: parseInt(localStorage.getItem(`chat_read_${activeChannel.id}`) || '0') } : c);
+            saveUnreadCount(updated);
+            return updated;
+        });
         fetchMessages(activeChannel.id, true);
         clearInterval(pollRef.current);
         pollRef.current = setInterval(() => fetchMessages(activeChannel.id), 5000);
@@ -213,11 +252,18 @@ export default function Chat() {
 
     useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
+    const openChannel = (ch) => {
+        markRead(ch.id, ch.last_message_id);
+        setActiveChannel(ch);
+    };
+
     const openDM = async (targetUser) => {
         setShowUserPicker(false);
         try {
             const res = await api.post('/chat/direct', { target_user_id: targetUser.id });
-            setActiveChannel({ ...res.data, dmPartnerName: targetUser.name });
+            const ch = { ...res.data, dmPartnerName: targetUser.name };
+            markRead(ch.id, ch.last_message_id);
+            setActiveChannel(ch);
             loadChannels();
         } catch { alert('Failed to open conversation.'); }
     };
@@ -231,6 +277,7 @@ export default function Chat() {
             const res = await api.post(`/chat/channels/${activeChannel.id}/messages`, { message: text });
             setMessages(prev => [...prev, res.data]);
             lastIdRef.current = res.data.id;
+            markRead(activeChannel.id, res.data.id);
             loadChannels();
         } catch { setInput(text); }
         finally { setSending(false); inputRef.current?.focus(); }
@@ -238,12 +285,9 @@ export default function Chat() {
 
     const handleKey = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } };
 
-    // Get display name for a channel
     const getChannelDisplay = (ch) => {
-        // detect DM by type OR by name pattern (fallback if ENUM not updated)
         const isDM = ch.type === 'direct' || (ch.name && ch.name.startsWith('DM:'));
         if (isDM) {
-            // Use stored dmPartnerName (set during openDM) OR derive from user1/user2
             let partnerName = ch.dmPartnerName;
             if (!partnerName) {
                 // eslint-disable-next-line eqeqeq
@@ -259,15 +303,19 @@ export default function Chat() {
     const groupChannels = channels.filter(c => !isDMChannel(c));
     const dmChannels = channels.filter(c => isDMChannel(c));
 
+    // Unread counts per tab
+    const groupUnread = groupChannels.filter(c => c.last_message_id && c.last_message_id > getLastRead(c.id)).length;
+    const dmUnread = dmChannels.filter(c => c.last_message_id && c.last_message_id > getLastRead(c.id)).length;
+
+    const isUnread = (ch) => ch.last_message_id && ch.last_message_id > getLastRead(ch.id);
     const isMine = msg => msg.sender_id === user?.id;
 
     if (activeChannel) {
         const disp = getChannelDisplay(activeChannel);
         return (
             <div className="flex flex-col h-screen bg-gray-50">
-                {/* Header */}
                 <div className="bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3 shrink-0">
-                    <button onClick={() => { setActiveChannel(null); clearInterval(pollRef.current); }}
+                    <button onClick={() => { setActiveChannel(null); clearInterval(pollRef.current); loadChannels(); }}
                         className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600">←</button>
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg ${disp.iconBg}`}>{disp.icon}</div>
                     <div className="flex-1 min-w-0">
@@ -278,17 +326,14 @@ export default function Chat() {
                                 {activeChannel.order_number} →
                             </button>
                         )}
-                        {activeChannel.type === 'direct' && (
-                            <p className="text-[10px] text-gray-400">Direct Message</p>
-                        )}
+                        {isDMChannel(activeChannel) && <p className="text-[10px] text-gray-400">Direct Message</p>}
                     </div>
                 </div>
 
-                {/* Messages */}
                 <div className="flex-1 overflow-y-auto px-3 py-4 space-y-3">
                     {messages.length === 0 && (
                         <div className="text-center py-12 text-gray-400">
-                            <div className="text-4xl mb-2">{activeChannel.type === 'direct' ? '👋' : '💬'}</div>
+                            <div className="text-4xl mb-2">{isDMChannel(activeChannel) ? '👋' : '💬'}</div>
                             <p className="text-sm">Start the conversation!</p>
                         </div>
                     )}
@@ -318,7 +363,6 @@ export default function Chat() {
                     <div ref={messagesEndRef} />
                 </div>
 
-                {/* Input */}
                 <div className="bg-white border-t border-gray-100 px-3 py-3 flex items-end gap-2 shrink-0">
                     <textarea ref={inputRef} rows={1}
                         className="flex-1 resize-none rounded-2xl border border-gray-200 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent bg-gray-50 max-h-28 leading-5"
@@ -338,7 +382,6 @@ export default function Chat() {
 
     return (
         <div className="flex flex-col h-screen pb-16 bg-gray-50">
-            {/* Header */}
             <div className="bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between shrink-0">
                 <div>
                     <h1 className="text-lg font-bold text-gray-800">💬 Chat</h1>
@@ -356,37 +399,49 @@ export default function Chat() {
                 </div>
             </div>
 
-            {/* Tabs */}
+            {/* Tabs with unread indicators */}
             <div className="flex gap-1 px-4 py-2 bg-white border-b border-gray-100 shrink-0">
-                {[{ key: 'channels', label: `Channels (${groupChannels.length})` }, { key: 'dms', label: `Direct (${dmChannels.length})` }].map(t => (
+                {[
+                    { key: 'channels', label: 'Channels', count: groupChannels.length, unread: groupUnread },
+                    { key: 'dms', label: 'Direct', count: dmChannels.length, unread: dmUnread },
+                ].map(t => (
                     <button key={t.key} onClick={() => setTab(t.key)}
-                        className={`flex-1 py-1.5 rounded-xl text-xs font-semibold transition-all ${tab === t.key ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-600'}`}>
-                        {t.label}
+                        className={`flex-1 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${tab === t.key ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                        {t.label} ({t.count})
+                        {t.unread > 0 && (
+                            <span className={`min-w-[16px] h-4 px-1 text-[9px] font-bold rounded-full flex items-center justify-center ${tab === t.key ? 'bg-white text-brand-600' : 'bg-red-500 text-white'}`}>
+                                {t.unread}
+                            </span>
+                        )}
                     </button>
                 ))}
             </div>
 
-            {/* List */}
             <div className="flex-1 overflow-y-auto divide-y divide-gray-100 bg-white">
                 {tab === 'channels' && (
                     groupChannels.length === 0 ? (
                         <div className="text-center py-12 text-gray-400"><div className="text-4xl mb-2">#</div><p>No channels yet. Create one!</p></div>
                     ) : groupChannels.map(ch => {
                         const d = getChannelDisplay(ch);
+                        const hasUnread = isUnread(ch);
                         return (
-                            <div key={ch.id} onClick={() => setActiveChannel(ch)}
-                                className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 cursor-pointer transition-colors">
-                                <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-lg font-bold shrink-0 ${d.iconBg}`}>{d.icon}</div>
+                            <div key={ch.id} onClick={() => openChannel(ch)}
+                                className={`flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-colors ${hasUnread ? 'bg-brand-50' : 'hover:bg-gray-50'}`}>
+                                <div className="relative">
+                                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-lg font-bold shrink-0 ${d.iconBg}`}>{d.icon}</div>
+                                    {hasUnread && <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white" />}
+                                </div>
                                 <div className="flex-1 min-w-0">
-                                    <div className="flex justify-between items-start">
-                                        <p className="font-semibold text-gray-800 text-sm truncate">{d.name}</p>
+                                    <div className="flex justify-between items-center">
+                                        <p className={`text-sm truncate ${hasUnread ? 'font-bold text-gray-900' : 'font-semibold text-gray-800'}`}>{d.name}</p>
                                         <p className="text-[10px] text-gray-400 shrink-0 ml-2">{fmtTime(ch.last_message_at || ch.created_at)}</p>
                                     </div>
                                     {ch.order_number && <p className="text-[10px] text-brand-600 font-mono">{ch.order_number}</p>}
-                                    <p className="text-xs text-gray-400 truncate mt-0.5">
-                                        {ch.last_message ? <><span className="font-medium text-gray-500">{ch.last_sender?.split(' ')[0]}:</span> {ch.last_message}</> : <span className="italic">No messages yet</span>}
+                                    <p className={`text-xs truncate mt-0.5 ${hasUnread ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>
+                                        {ch.last_message ? <><span className="font-medium">{ch.last_sender?.split(' ')[0]}:</span> {ch.last_message}</> : <span className="italic text-gray-400">No messages yet</span>}
                                     </p>
                                 </div>
+                                {hasUnread && <UnreadBadge count={null} />}
                             </div>
                         );
                     })
@@ -401,22 +456,28 @@ export default function Chat() {
                             </button>
                         </div>
                     ) : dmChannels.map(ch => {
-                        const partnerName = ch.user1_id === user?.id ? ch.user2_name : ch.user1_name;
+                        // eslint-disable-next-line eqeqeq
+                        const partnerName = ch.user1_id == user?.id ? ch.user2_name : ch.user1_name;
+                        const hasUnread = isUnread(ch);
                         return (
-                            <div key={ch.id} onClick={() => setActiveChannel(ch)}
-                                className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 cursor-pointer transition-colors">
-                                <div className="w-11 h-11 rounded-full bg-purple-100 flex items-center justify-center text-sm font-bold text-purple-700 shrink-0">
-                                    {initials(partnerName)}
+                            <div key={ch.id} onClick={() => openChannel(ch)}
+                                className={`flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-colors ${hasUnread ? 'bg-purple-50' : 'hover:bg-gray-50'}`}>
+                                <div className="relative">
+                                    <div className="w-11 h-11 rounded-full bg-purple-100 flex items-center justify-center text-sm font-bold text-purple-700 shrink-0">
+                                        {initials(partnerName)}
+                                    </div>
+                                    {hasUnread && <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white" />}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <div className="flex justify-between items-start">
-                                        <p className="font-semibold text-gray-800 text-sm truncate">{partnerName}</p>
+                                    <div className="flex justify-between items-center">
+                                        <p className={`text-sm truncate ${hasUnread ? 'font-bold text-gray-900' : 'font-semibold text-gray-800'}`}>{partnerName}</p>
                                         <p className="text-[10px] text-gray-400 shrink-0 ml-2">{fmtTime(ch.last_message_at || ch.created_at)}</p>
                                     </div>
-                                    <p className="text-xs text-gray-400 truncate mt-0.5">
-                                        {ch.last_message ? ch.last_message : <span className="italic">No messages yet</span>}
+                                    <p className={`text-xs truncate mt-0.5 ${hasUnread ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>
+                                        {ch.last_message || <span className="italic text-gray-400">No messages yet</span>}
                                     </p>
                                 </div>
+                                {hasUnread && <UnreadBadge count={null} />}
                             </div>
                         );
                     })
@@ -424,10 +485,10 @@ export default function Chat() {
             </div>
 
             {showNewChannel && (
-                <NewChannelModal onCreated={ch => { setShowNewChannel(false); loadChannels(); setActiveChannel(ch); }} onClose={() => setShowNewChannel(false)} />
+                <NewChannelModal onCreated={ch => { setShowNewChannel(false); loadChannels(); openChannel(ch); }} onClose={() => setShowNewChannel(false)} />
             )}
             {showUserPicker && (
-                <UserPicker currentUserId={user?.id} onSelect={openDM} onClose={() => setShowUserPicker(false)} />
+                <UserPicker onSelect={openDM} onClose={() => setShowUserPicker(false)} />
             )}
             <BottomNav />
         </div>
