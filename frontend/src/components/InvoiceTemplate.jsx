@@ -95,10 +95,14 @@ function PartySection({ order }) {
             <div style={{ flex: 1, padding: '12px', background: '#f8f8f8', borderRadius: '6px', borderLeft: '4px solid #1a1a1a' }}>
                 <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#888', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '1px' }}>Billed To</div>
                 <div style={{ fontWeight: 'bold', fontSize: '15px', color: '#1a1a1a' }}>{order.retailer_name}</div>
-                {order.retailer_address && <div style={{ fontSize: '11px', color: '#555', marginTop: '4px' }}>{order.retailer_address}</div>}
-                {order.area_name && <div style={{ fontSize: '11px', color: '#555' }}>Area: {order.area_name}</div>}
-                {order.retailer_phone && <div style={{ fontSize: '11px', color: '#555', marginTop: '4px' }}>📞 {order.retailer_phone}</div>}
-                {order.gst_number && <div style={{ fontSize: '11px', color: '#555', marginTop: '2px' }}>GSTIN: <strong>{order.gst_number}</strong></div>}
+                {order.retailer_address && (
+                    <div style={{ fontSize: '11px', color: '#555', marginTop: '4px', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
+                        {order.retailer_address}
+                    </div>
+                )}
+                {order.area_name && <div style={{ fontSize: '11px', color: '#555', marginTop: '2px' }}>Area: {order.area_name}</div>}
+                {order.retailer_phone && <div style={{ fontSize: '11px', color: '#555', marginTop: '6px' }}>📞 {order.retailer_phone}</div>}
+                {order.gst_number && <div style={{ fontSize: '11px', color: '#555', marginTop: '4px' }}>GSTIN: <strong>{order.gst_number}</strong></div>}
             </div>
             {/* Order Meta */}
             <div style={{ width: '180px', padding: '12px', background: '#f8f8f8', borderRadius: '6px' }}>
