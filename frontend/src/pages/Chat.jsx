@@ -240,17 +240,24 @@ export default function Chat() {
 
     // Get display name for a channel
     const getChannelDisplay = (ch) => {
-        if (ch.type === 'direct') {
-            const partner = ch.user1_id === user?.id ? ch.user2_name : ch.user1_name;
-            return { name: partner, icon: '👤', iconBg: 'bg-purple-100' };
+        // detect DM by type OR by name pattern (fallback if ENUM not updated)
+        const isDM = ch.type === 'direct' || (ch.name && ch.name.startsWith('DM:'));
+        if (isDM) {
+            // Use stored dmPartnerName (set during openDM) OR derive from user1/user2
+            let partnerName = ch.dmPartnerName;
+            if (!partnerName) {
+                // eslint-disable-next-line eqeqeq
+                partnerName = ch.user1_id == user?.id ? ch.user2_name : ch.user1_name;
+            }
+            return { name: partnerName || 'Direct Message', icon: '👤', iconBg: 'bg-purple-100' };
         }
         if (ch.type === 'order') return { name: ch.name, icon: '📦', iconBg: 'bg-brand-100' };
         return { name: ch.name, icon: '#', iconBg: 'bg-green-100' };
     };
 
-    // Split channels into groups and DMs
-    const groupChannels = channels.filter(c => c.type !== 'direct');
-    const dmChannels = channels.filter(c => c.type === 'direct');
+    const isDMChannel = (c) => c.type === 'direct' || (c.name && c.name.startsWith('DM:'));
+    const groupChannels = channels.filter(c => !isDMChannel(c));
+    const dmChannels = channels.filter(c => isDMChannel(c));
 
     const isMine = msg => msg.sender_id === user?.id;
 
