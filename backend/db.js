@@ -32,7 +32,7 @@ const pool = mysql.createPool({
 const promisePool = pool.promise();
 
 // ── Startup connection test ───────────────────────────────────
-pool.getConnection((err, conn) => {
+pool.getConnection(async (err, conn) => {
     if (err) {
         console.error('❌ Hostinger MySQL connection failed:');
         console.error('   Code   :', err.code);
@@ -42,6 +42,27 @@ pool.getConnection((err, conn) => {
         if (err.code === 'ER_BAD_DB_ERROR') console.error('   → Database not found. Check DB_NAME in .env');
     } else {
         console.log(`✅ Connected to Hostinger MySQL → ${process.env.DB_NAME}@${process.env.DB_HOST}`);
+
+        // Auto-migrate tables
+        try {
+            await conn.promise().query(`
+                CREATE TABLE IF NOT EXISTS stock_inwards (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    product_id INT NOT NULL,
+                    user_id INT NOT NULL,
+                    quantity INT NOT NULL,
+                    supplier VARCHAR(255),
+                    notes TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (product_id) REFERENCES products(id),
+                    FOREIGN KEY (user_id) REFERENCES users(id)
+                )
+            `);
+            console.log(`✅ stock_inwards table verified`);
+        } catch (tableErr) {
+            console.error('❌ Failed to run table migrations:', tableErr.message);
+        }
+
         conn.release();
     }
 });

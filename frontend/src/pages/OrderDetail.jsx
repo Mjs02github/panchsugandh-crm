@@ -146,6 +146,62 @@ export default function OrderDetail() {
         }
     };
 
+    const handlePrint = async () => {
+        if (window.Capacitor?.isNativePlatform()) {
+            try {
+                const { Filesystem, Directory } = await import('@capacitor/filesystem');
+                const { Share } = await import('@capacitor/share');
+                const html2pdf = (await import('html2pdf.js')).default;
+
+                // 1. Get the invoice DOM node (unhide it temporarily for capture if needed)
+                const element = document.querySelector('.invoice-print-container');
+                if (!element) return alert('Invoice element not found.');
+
+                // Clone it to ensure it renders correctly off-screen
+                const clone = element.cloneNode(true);
+                clone.style.display = 'block';
+                clone.classList.remove('hidden');
+                document.body.appendChild(clone);
+
+                // 2. Generate PDF blob
+                const opt = {
+                    margin: 0,
+                    filename: `Invoice_${order.order_number}.pdf`,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+
+                const pdfBlob = await html2pdf().set(opt).from(clone).outputPdf('blob');
+                document.body.removeChild(clone);
+
+                // 3. Convert Blob to Base64
+                const reader = new FileReader();
+                reader.readAsDataURL(pdfBlob);
+                const base64Data = await new Promise((resolve, reject) => {
+                    reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                    reader.onerror = reject;
+                });
+
+                // 4. Save and Share Native File
+                const savedFile = await Filesystem.writeFile({
+                    path: opt.filename,
+                    data: base64Data,
+                    directory: Directory.Documents
+                });
+
+                await Share.share({ title: opt.filename, url: savedFile.uri });
+
+            } catch (err) {
+                console.error('Android Print Error:', err);
+                alert('Failed to generate PDF on device.');
+            }
+        } else {
+            // Web browser standard print
+            window.print();
+        }
+    };
+
     const handleApproveCancel = async () => {
         if (!window.confirm('Approve this cancellation request? The order will be cancelled.')) return;
         try {
@@ -178,7 +234,7 @@ export default function OrderDetail() {
                 <span className={sc.cls}>{sc.icon} {sc.label}</span>
                 {canPrint && (
                     <button
-                        onClick={() => window.print()}
+                        onClick={handlePrint}
                         className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg shadow-sm hover:bg-blue-700 transition-colors"
                     >
                         🖨️ Print
@@ -190,7 +246,7 @@ export default function OrderDetail() {
 
                 {canPrint && (
                     <button
-                        onClick={() => window.print()}
+                        onClick={handlePrint}
                         className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold flex items-center justify-center gap-2 py-3 rounded-xl shadow-sm transition-colors mb-2"
                     >
                         <span>📄</span> Download / Print Tax Invoice

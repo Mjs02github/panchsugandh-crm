@@ -23,8 +23,8 @@ const NAV_CONFIG = {
         { label: 'Chat', icon: '💬', path: '/chat', badge: true },
     ],
     store_incharge: [
+        { label: 'Dashboard', icon: '📊', path: '/store' },
         { label: 'Orders', icon: '📋', path: '/store/orders' },
-        { label: 'Retailers', icon: '🏪', path: '/store/retailers' },
         { label: 'Products', icon: '📦', path: '/store/products' },
         { label: 'Chat', icon: '💬', path: '/chat', badge: true },
     ],

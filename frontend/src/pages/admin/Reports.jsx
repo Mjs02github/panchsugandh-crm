@@ -56,14 +56,45 @@ export default function Reports() {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             if (!response.ok) throw new Error('Download failed');
+
             const blob = await response.blob();
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${currentTab.key}_report_${from}_to_${to}.xlsx`;
-            a.click();
-            URL.revokeObjectURL(url);
-        } catch {
+            const fileName = `${currentTab.key}_report_${from}_to_${to}.xlsx`;
+
+            if (window.Capacitor?.isNativePlatform()) {
+                const { Filesystem, Directory } = await import('@capacitor/filesystem');
+                const { Share } = await import('@capacitor/share');
+
+                // Convert blob to base64
+                const reader = new FileReader();
+                reader.readAsDataURL(blob);
+                const base64Data = await new Promise((resolve, reject) => {
+                    reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                    reader.onerror = reject;
+                });
+
+                // Write file to device Document folder
+                const savedFile = await Filesystem.writeFile({
+                    path: fileName,
+                    data: base64Data,
+                    directory: Directory.Documents
+                });
+
+                // Prompt user to open/share it
+                await Share.share({
+                    title: fileName,
+                    url: savedFile.uri,
+                });
+            } else {
+                // Standard web browser download
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+        } catch (err) {
+            console.error('Download err:', err);
             setError('Failed to download Excel file.');
         } finally {
             setDownloading(false);

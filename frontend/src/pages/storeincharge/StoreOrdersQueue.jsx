@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api';
+import BottomNav from '../../components/BottomNav';
 
 export default function StoreOrdersQueue() {
     const [orders, setOrders] = useState([]);
+    const [deliveryUsers, setDeliveryUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(null);
     const [activeTab, setActiveTab] = useState('BILLED');
+    const [assigningOrder, setAssigningOrder] = useState(null);
+    const [selectedDeliveryPerson, setSelectedDeliveryPerson] = useState('');
 
     const fetchOrders = () => {
         setLoading(true);
@@ -16,8 +20,17 @@ export default function StoreOrdersQueue() {
             .finally(() => setLoading(false));
     };
 
+    const fetchDeliveryUsers = () => {
+        api.get('/users').then(res => {
+            const drivers = res.data.filter(u => u.role === 'delivery_incharge');
+            setDeliveryUsers(drivers);
+            if (drivers.length > 0) setSelectedDeliveryPerson(drivers[0].id);
+        }).catch(err => console.error("Could not fetch delivery users", err));
+    };
+
     useEffect(() => {
         fetchOrders();
+        fetchDeliveryUsers();
     }, []);
 
     const markReadyToShip = async (id) => {
@@ -33,18 +46,36 @@ export default function StoreOrdersQueue() {
         }
     };
 
+    const handleAssignDelivery = async () => {
+        if (!selectedDeliveryPerson) return alert("Select a delivery person first.");
+        setActionLoading(assigningOrder);
+        try {
+            await api.post('/delivery/assign', {
+                order_id: assigningOrder,
+                delivery_person_id: selectedDeliveryPerson
+            });
+            alert("Order dispatched for delivery!");
+            setAssigningOrder(null);
+            fetchOrders();
+        } catch (err) {
+            alert(err.response?.data?.error || 'Failed to assign delivery');
+        } finally {
+            setActionLoading(null);
+        }
+    }
+
     const displayOrders = orders.filter(o => o.status === activeTab);
 
     return (
         <div className="pb-24">
-            <header className="page-header sticky top-[60px] bg-white shadow-sm z-10 px-4 py-3 border-b flex justify-between items-center">
+            <header className="page-header py-4 px-5 border-b shadow-sm flex justify-between items-center">
                 <div>
                     <h1 className="text-xl font-bold text-gray-800">Store Orders</h1>
-                    <p className="text-xs text-gray-500">Prepare and pack orders for delivery</p>
+                    <p className="text-xs text-gray-500">Prepare and dispatch orders</p>
                 </div>
             </header>
 
-            <div className="flex bg-white border-b px-2 pt-2 sticky top-[132px] z-10">
+            <div className="flex bg-white border-b px-2 pt-2 sticky top-[0px] z-10 shadow-sm">
                 {['BILLED', 'READY_TO_SHIP'].map(tab => (
                     <button
                         key={tab}
@@ -52,7 +83,7 @@ export default function StoreOrdersQueue() {
                         className={`flex-1 text-sm font-medium py-3 text-center border-b-2 transition-colors ${activeTab === tab ? 'border-brand-500 text-brand-600' : 'border-transparent text-gray-500 hover:text-gray-700'
                             }`}
                     >
-                        {tab === 'BILLED' ? 'To Pack' : 'Ready'} ({orders.filter(o => o.status === tab).length})
+                        {tab === 'BILLED' ? 'To Pack' : 'Ready / Assign'} ({orders.filter(o => o.status === tab).length})
                     </button>
                 ))}
             </div>
@@ -82,12 +113,44 @@ export default function StoreOrdersQueue() {
                                     <p className="text-xs text-gray-500 mt-1">{order.area_name}</p>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-xs text-gray-500">{new Date(order.created_at).toLocaleDateString()}</p>
+                                    <p className="text-[10px] text-gray-400 font-mono">#{order.order_number}</p>
                                     <p className="font-bold text-brand-600 mt-0.5">₹{(order.total_amount || 0).toLocaleString('en-IN')}</p>
                                 </div>
                             </div>
 
-                            <div className="pt-2 border-t mt-2 flex justify-between items-center">
+                            {/* ASSIGNMENT UI FOR READY TO SHIP ORDERS */}
+                            {activeTab === 'READY_TO_SHIP' && assigningOrder === order.id && (
+                                <div className="p-3 bg-brand-50 rounded-xl border border-brand-100 mt-3 space-y-3">
+                                    <label className="text-xs font-bold text-brand-800 uppercase tracking-wider">Select Delivery Person</label>
+                                    <select
+                                        className="input bg-white"
+                                        value={selectedDeliveryPerson}
+                                        onChange={(e) => setSelectedDeliveryPerson(e.target.value)}
+                                    >
+                                        <option value="">-- Choose Driver --</option>
+                                        {deliveryUsers.map(u => (
+                                            <option key={u.id} value={u.id}>{u.name}</option>
+                                        ))}
+                                    </select>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={handleAssignDelivery}
+                                            disabled={actionLoading === order.id || !selectedDeliveryPerson}
+                                            className="flex-1 bg-brand-600 text-white font-bold py-2 rounded-lg text-sm"
+                                        >
+                                            {actionLoading === order.id ? 'Assigning...' : 'Dispatch Now'}
+                                        </button>
+                                        <button
+                                            onClick={() => setAssigningOrder(null)}
+                                            className="px-4 bg-white border border-gray-300 text-gray-700 font-bold py-2 rounded-lg text-sm"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="pt-3 border-t mt-2 flex justify-between items-center">
                                 <Link to={`/orders/${order.id}`} className="text-sm font-medium text-brand-600 hover:text-brand-700 transition">
                                     View Details →
                                 </Link>
@@ -103,11 +166,22 @@ export default function StoreOrdersQueue() {
                                         ) : '📦 Mark Ready'}
                                     </button>
                                 )}
+
+                                {activeTab === 'READY_TO_SHIP' && assigningOrder !== order.id && (
+                                    <button
+                                        onClick={() => setAssigningOrder(order.id)}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 rounded-lg shadow-sm text-sm flex items-center gap-2 transition"
+                                    >
+                                        🚚 Assign Delivery
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ))
                 )}
             </main>
+
+            <BottomNav />
         </div>
     );
 }

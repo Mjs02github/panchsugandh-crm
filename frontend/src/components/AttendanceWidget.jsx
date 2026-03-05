@@ -25,36 +25,48 @@ export default function AttendanceWidget({ user }) {
             });
     };
 
-    const handlePunch = (action) => {
+    const handlePunch = async (action) => {
         setLoading(true);
         setError('');
 
-        if (!navigator.geolocation) {
-            setError('Geolocation is not supported by your browser.');
-            setLoading(false);
-            return;
-        }
-
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const { latitude, longitude } = position.coords;
-                api.post(`/attendance/${action}`, { latitude, longitude })
-                    .then(() => {
-                        fetchStatus();
-                    })
-                    .catch(err => {
-                        setError(err.response?.data?.error || 'Failed to record punch.');
-                    })
-                    .finally(() => setLoading(false));
-            },
-            (err) => {
-                console.error('GPS Error:', err);
-                if (err.code === 1) setError('Please allow location access to punch in/out.');
-                else setError('Failed to get GPS location.');
+        try {
+            let lat, lng;
+            if (window.Capacitor?.isNativePlatform()) {
+                const { Geolocation } = await import('@capacitor/geolocation');
+                const permStatus = await Geolocation.checkPermissions();
+                if (permStatus.location !== 'granted') {
+                    const request = await Geolocation.requestPermissions();
+                    if (request.location !== 'granted') {
+                        setError('Please allow location access to punch in/out.');
+                        setLoading(false);
+                        return;
+                    }
+                }
+                const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
+                lat = pos.coords.latitude;
+                lng = pos.coords.longitude;
+            } else if (navigator.geolocation) {
+                const pos = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+                });
+                lat = pos.coords.latitude;
+                lng = pos.coords.longitude;
+            } else {
+                setError('Geolocation is not supported by your device.');
                 setLoading(false);
-            },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-        );
+                return;
+            }
+
+            api.post(`/attendance/${action}`, { latitude: lat, longitude: lng })
+                .then(() => fetchStatus())
+                .catch(err => setError(err.response?.data?.error || 'Failed to record punch.'))
+                .finally(() => setLoading(false));
+
+        } catch (err) {
+            console.error('GPS Error:', err);
+            setError('Failed to get GPS location.');
+            setLoading(false);
+        }
     };
 
     if (status === 'LOADING') return (

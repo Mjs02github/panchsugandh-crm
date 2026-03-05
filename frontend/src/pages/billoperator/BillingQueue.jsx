@@ -128,9 +128,68 @@ export default function BillingQueue() {
     const handlePrintHistory = async (order) => {
         try {
             const r = await api.get(`/orders/${order.id}`);
+
+            // Wait for React to render the InvoiceTemplate by setting state,
+            // then wait a tick before capturing the DOM if native, or printing if web.
             setPrintOrder(order);
             setPrintItems(r.data.items || []);
-            setTimeout(() => window.print(), 300);
+
+            setTimeout(async () => {
+                if (window.Capacitor?.isNativePlatform()) {
+                    try {
+                        const { Filesystem, Directory } = await import('@capacitor/filesystem');
+                        const { Share } = await import('@capacitor/share');
+                        const html2pdf = (await import('html2pdf.js')).default;
+
+                        // 1. Get the invoice DOM node ( rendered by InvoiceTemplate component )
+                        // Using querySelectorAll to get the LAST one in case lastBilledOrder is also present
+                        const elements = document.querySelectorAll('.invoice-print-container');
+                        const element = elements[elements.length - 1];
+                        if (!element) return alert('Invoice element not found.');
+
+                        // Clone it
+                        const clone = element.cloneNode(true);
+                        clone.style.display = 'block';
+                        clone.classList.remove('hidden');
+                        document.body.appendChild(clone);
+
+                        // 2. Generate PDF blob
+                        const opt = {
+                            margin: 0,
+                            filename: `Invoice_${order.order_number || order.bill_number}.pdf`,
+                            image: { type: 'jpeg', quality: 0.98 },
+                            html2canvas: { scale: 2, useCORS: true },
+                            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                        };
+
+                        const pdfBlob = await html2pdf().set(opt).from(clone).outputPdf('blob');
+                        document.body.removeChild(clone);
+
+                        // 3. Convert Blob to Base64
+                        const reader = new FileReader();
+                        reader.readAsDataURL(pdfBlob);
+                        const base64Data = await new Promise((resolve, reject) => {
+                            reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                            reader.onerror = reject;
+                        });
+
+                        // 4. Save and Share relative Native File
+                        const savedFile = await Filesystem.writeFile({
+                            path: opt.filename,
+                            data: base64Data,
+                            directory: Directory.Documents
+                        });
+
+                        await Share.share({ title: opt.filename, url: savedFile.uri });
+                    } catch (err) {
+                        console.error('Android Print Error:', err);
+                        alert('Failed to generate PDF on device.');
+                    }
+                } else {
+                    window.print();
+                }
+            }, 300);
+
         } catch { alert('Failed to load order for printing.'); }
     };
 
@@ -140,7 +199,7 @@ export default function BillingQueue() {
             <div className="page-header">
                 <h1 className="text-lg font-semibold flex-1">Billing</h1>
                 {success && lastBilledOrder && (
-                    <button onClick={() => window.print()}
+                    <button onClick={() => handlePrintHistory(lastBilledOrder)}
                         className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-xs font-semibold rounded-lg">
                         🖨️ Print
                     </button>
@@ -162,7 +221,7 @@ export default function BillingQueue() {
                 <div className="mx-4 mt-3 p-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-xl flex items-center justify-between gap-3">
                     <span>{success}</span>
                     {lastBilledOrder && (
-                        <button onClick={() => window.print()}
+                        <button onClick={() => handlePrintHistory(lastBilledOrder)}
                             className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white text-xs font-semibold rounded-lg">
                             🖨️ Print Invoice
                         </button>

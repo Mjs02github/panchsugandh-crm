@@ -54,18 +54,27 @@ export default function RetailersList() {
         address: '', state: '', district: '', area_id: '', is_new_area: false, gst_number: '', credit_limit: '',
     });
 
-    const getGPSLocation = () => {
-        return new Promise((resolve) => {
-            if (!navigator.geolocation) return resolve({ latitude: null, longitude: null });
-            navigator.geolocation.getCurrentPosition(
-                (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
-                (err) => {
-                    console.warn('GPS Error:', err);
-                    resolve({ latitude: null, longitude: null });
-                },
-                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-            );
-        });
+    const getGPSLocation = async () => {
+        try {
+            if (window.Capacitor?.isNativePlatform()) {
+                const { Geolocation } = await import('@capacitor/geolocation');
+                const permStatus = await Geolocation.checkPermissions();
+                if (permStatus.location !== 'granted') {
+                    const request = await Geolocation.requestPermissions();
+                    if (request.location !== 'granted') return { latitude: null, longitude: null };
+                }
+                const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 5000 });
+                return { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+            } else if (navigator.geolocation) {
+                const pos = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 });
+                });
+                return { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+            }
+        } catch (err) {
+            console.warn('GPS Error:', err);
+        }
+        return { latitude: null, longitude: null };
     };
 
     const handleSave = async (e) => {
