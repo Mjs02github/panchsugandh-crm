@@ -1,5 +1,9 @@
 {
   "appId": "com.panchsugandh.crm",
   "appName": "Panchsugandh CRM",
-  "webDir": "dist"
+  "webDir": "dist",
+  "server": {
+    "cleartext": true,
+    "androidScheme": "https"
+  }
 }
