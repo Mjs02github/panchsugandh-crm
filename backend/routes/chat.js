@@ -30,8 +30,8 @@ router.get('/channels', auth, async (req, res) => {
             LEFT JOIN sales_orders so ON c.order_id = so.id
             LEFT JOIN users u1 ON c.user1_id = u1.id
             LEFT JOIN users u2 ON c.user2_id = u2.id
-            WHERE c.type != 'direct'
-               OR (c.type = 'direct' AND (c.user1_id = ? OR c.user2_id = ?))
+            WHERE c.name NOT LIKE 'DM:%'
+               OR (c.name LIKE 'DM:%' AND (c.user1_id = ? OR c.user2_id = ?))
             ORDER BY COALESCE(
                 (SELECT created_at FROM chat_messages WHERE channel_id = c.id ORDER BY created_at DESC LIMIT 1),
                 c.created_at
@@ -83,7 +83,7 @@ router.post('/direct', auth, async (req, res) => {
              FROM chat_channels c
              JOIN users u1 ON c.user1_id = u1.id
              JOIN users u2 ON c.user2_id = u2.id
-             WHERE c.type = 'direct' AND c.user1_id = ? AND c.user2_id = ?`,
+             WHERE c.name LIKE 'DM:%' AND c.user1_id = ? AND c.user2_id = ?`,
             [u1, u2]
         );
         if (existing.length) return res.json(existing[0]);
