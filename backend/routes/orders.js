@@ -293,12 +293,11 @@ router.patch('/:id/bill', auth, allowRoles(ROLES.BILL_OPERATOR, ROLES.ADMIN, ROL
             }
         }
 
-        // Audit log (skip if table not provisioned)
-        // await conn.query(
-        //     `INSERT INTO audit_log (user_id, action, entity_type, entity_id, new_value)
-        // VALUES (?, 'ORDER_BILLED', 'order', ?, ?)`,
-        //     [req.user.id, req.params.id, JSON.stringify({ bill_number })]
-        // );
+        await conn.query(
+            `INSERT INTO audit_log (user_id, action, entity_type, entity_id, new_value)
+       VALUES (?, 'ORDER_BILLED', 'order', ?, ?)`,
+            [req.user.id, req.params.id, JSON.stringify({ bill_number })]
+        );
 
         await conn.commit();
         res.json({ message: 'Order marked as BILLED successfully.' });
@@ -367,12 +366,11 @@ router.patch('/:id/deliver', auth, allowRoles(ROLES.DELIVERY_INCHARGE, ROLES.ADM
             );
         }
 
-        // Audit log (skip if table not provisioned)
-        // await conn.query(
-        //     `INSERT INTO audit_log (user_id, action, entity_type, entity_id, new_value)
-        // VALUES (?, 'DELIVERY_COMPLETED', 'order', ?, ?)`,
-        //     [req.user.id, req.params.id, JSON.stringify({ delivery_remark, delivery_date: dDate })]
-        // );
+        await conn.query(
+            `INSERT INTO audit_log (user_id, action, entity_type, entity_id, new_value)
+       VALUES (?, 'DELIVERY_COMPLETED', 'order', ?, ?)`,
+            [req.user.id, req.params.id, JSON.stringify({ delivery_remark, delivery_date: dDate })]
+        );
 
         await conn.commit();
         res.json({ message: 'Order marked as DELIVERED successfully.' });
@@ -404,11 +402,11 @@ router.patch('/:id/cancel-request', auth, allowRoles(ROLES.BILL_OPERATOR, ROLES.
             [cancel_reason.trim(), req.params.id]
         );
 
-        // await db.query(
-        //     `INSERT INTO audit_log (user_id, action, entity_type, entity_id, new_value)
-        // VALUES (?, 'CANCEL_REQUESTED', 'order', ?, ?)`,
-        //     [req.user.id, req.params.id, JSON.stringify({ cancel_reason: cancel_reason.trim() })]
-        // );
+        await db.query(
+            `INSERT INTO audit_log (user_id, action, entity_type, entity_id, new_value)
+       VALUES (?, 'CANCEL_REQUESTED', 'order', ?, ?)`,
+            [req.user.id, req.params.id, JSON.stringify({ cancel_reason: cancel_reason.trim() })]
+        );
         res.json({ message: 'Cancellation requested successfully.' });
     } catch (err) {
         console.error('Cancel request error:', err);
@@ -430,11 +428,11 @@ router.patch('/:id/cancel', auth, allowRoles(ROLES.ADMIN, ROLES.SUPER_ADMIN), as
             [req.params.id]
         );
 
-        // await db.query(
-        //     `INSERT INTO audit_log (user_id, action, entity_type, entity_id, new_value)
-        // VALUES (?, 'ORDER_CANCELLED', 'order', ?, '{"status":"CANCELLED"}')`,
-        //     [req.user.id, req.params.id]
-        // );
+        await db.query(
+            `INSERT INTO audit_log (user_id, action, entity_type, entity_id, new_value)
+       VALUES (?, 'ORDER_CANCELLED', 'order', ?, '{"status":"CANCELLED"}')`,
+            [req.user.id, req.params.id]
+        );
         res.json({ message: 'Order successfully cancelled.' });
     } catch (err) {
         console.error('Cancel approval error:', err);
@@ -457,11 +455,11 @@ router.patch('/:id/reject-cancel', auth, allowRoles(ROLES.ADMIN, ROLES.SUPER_ADM
             [req.params.id]
         );
 
-        // await db.query(
-        //     `INSERT INTO audit_log (user_id, action, entity_type, entity_id, new_value)
-        // VALUES (?, 'CANCEL_REJECTED', 'order', ?, '{"status":"PENDING"}')`,
-        //     [req.user.id, req.params.id]
-        // );
+        await db.query(
+            `INSERT INTO audit_log (user_id, action, entity_type, entity_id, new_value)
+       VALUES (?, 'CANCEL_REJECTED', 'order', ?, '{"status":"PENDING"}')`,
+            [req.user.id, req.params.id]
+        );
         res.json({ message: 'Cancellation request rejected. Order reverted to PENDING.' });
     } catch (err) {
         console.error('Cancel rejection error:', err);
@@ -490,10 +488,10 @@ router.patch('/:id/ready_to_ship', auth, allowRoles(ROLES.STORE_INCHARGE, ROLES.
             [req.params.id]
         );
 
-        // await conn.query(
-        //     "INSERT INTO audit_log (user_id, action, entity_type, entity_id, new_value) VALUES (?, 'READY_TO_SHIP', 'order', ?, ?)",
-        //     [req.user.id, req.params.id, '{"ready":true}']
-        // );
+        await conn.query(
+            "INSERT INTO audit_log (user_id, action, entity_type, entity_id, new_value) VALUES (?, 'READY_TO_SHIP', 'order', ?, ?)",
+            [req.user.id, req.params.id, '{"ready":true}']
+        );
 
         await conn.commit();
         res.json({ message: 'Order marked as READY_TO_SHIP successfully.' });
