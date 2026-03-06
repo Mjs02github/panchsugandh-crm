@@ -109,7 +109,11 @@ export default function BillingQueue() {
     // Helpers — same formula as NewOrder
     const calcBaseRate = (mrp, gst) => parseFloat(mrp || 0) / (1 + parseFloat(gst || 0) / 100);
     const calcBilledRate = (mrp, gst, disc) => calcBaseRate(mrp, gst) * (1 - parseFloat(disc || 0) / 100);
-    const calcLineAmt = (mrp, gst, disc, qty) => calcBilledRate(mrp, gst, disc) * parseInt(qty || 1);
+    const calcLineAmt = (mrp, gst, disc, qty) => {
+        const billed = calcBilledRate(mrp, gst, disc);
+        const gstFactor = 1 + parseFloat(gst || 0) / 100;
+        return billed * gstFactor * parseInt(qty || 1);
+    };
 
     const computedTotal = orderItems.reduce((s, it) => {
         const disc = itemDiscounts[it.id] ?? parseFloat(it.discount_pct || 0);

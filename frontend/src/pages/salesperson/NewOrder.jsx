@@ -81,7 +81,13 @@ export default function NewOrder() {
     const getProductById = (id) => products.find(p => String(p.id) === String(id));
     const calcBaseRate = (p) => p ? parseFloat(p.mrp || 0) / (1 + (parseFloat(p.gst_rate || 0) / 100)) : 0;
     const calcBilledRate = (p, disc) => calcBaseRate(p) * (1 - parseFloat(disc || 0) / 100);
-    const calcLineAmount = (p, qty, disc) => calcBilledRate(p, disc) * parseInt(qty || 1);
+    // Line amount includes GST: billedRate * (1 + gst%) * qty
+    const calcLineAmount = (p, qty, disc) => {
+        if (!p) return 0;
+        const billed = calcBilledRate(p, disc);
+        const gst = parseFloat(p.gst_rate || 0) / 100;
+        return billed * (1 + gst) * parseInt(qty || 1);
+    };
 
     const totalAmount = form.items.reduce((s, it) => {
         const p = getProductById(it.product_id);

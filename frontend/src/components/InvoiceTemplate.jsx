@@ -135,6 +135,7 @@ function ItemsTable({ items }) {
                     <th style={{ ...thStyle, textAlign: 'right', width: '60px' }}>Qty</th>
                     {INVOICE_CONFIG.showMRP && <th style={{ ...thStyle, textAlign: 'right', width: '80px' }}>MRP (₹)</th>}
                     <th style={{ ...thStyle, textAlign: 'right', width: '60px' }}>Disc%</th>
+                    <th style={{ ...thStyle, textAlign: 'right', width: '55px' }}>GST%</th>
                     <th style={{ ...thStyle, textAlign: 'right', width: '80px' }}>Rate (₹)</th>
                     <th style={{ ...thStyle, textAlign: 'right', width: '90px' }}>Amount (₹)</th>
                 </tr>
@@ -160,6 +161,9 @@ function ItemsTable({ items }) {
                             )}
                             <td style={{ ...tdStyle, textAlign: 'right', color: '#e53e3e', fontSize: '11px' }}>
                                 {item.discount_pct > 0 ? `${parseFloat(item.discount_pct).toFixed(1)}%` : '—'}
+                            </td>
+                            <td style={{ ...tdStyle, textAlign: 'right', color: '#666', fontSize: '11px' }}>
+                                {item.gst_rate > 0 ? `${item.gst_rate}%` : '0%'}
                             </td>
                             <td style={{ ...tdStyle, textAlign: 'right' }}>₹{fmt(item.unit_price)}</td>
                             <td style={{ ...tdStyle, textAlign: 'right', fontWeight: '600' }}>₹{fmt(item.line_amount)}</td>
