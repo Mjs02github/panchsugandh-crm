@@ -53,6 +53,7 @@ export default function BillingQueue() {
     const [lastBilledOrder, setLastBilledOrder] = useState(null);
     const [showCancelFor, setShowCancelFor] = useState(null);
     const [cancelReason, setCancelReason] = useState('');
+    const [itemDiscounts, setItemDiscounts] = useState({}); // {itemId: discPct}
 
     // ── History state ──────────────────────────────────────
     const [history, setHistory] = useState([]);
@@ -89,23 +90,57 @@ export default function BillingQueue() {
     // ── Bill submission ────────────────────────────────────
     const handleSelectOrder = async (order) => {
         setSelected(order.id); setSuccess(''); setError('');
-        setFinalAmount(order.total_amount); setBillNum(''); setOrderItems([]);
+        setBillNum(''); setOrderItems([]); setItemDiscounts({});
         setShowCancelFor(null); setCancelReason('');
         setLoadingDetails(true);
-        try { const r = await api.get(`/orders/${order.id}`); setOrderItems(r.data.items || []); }
+        try {
+            const r = await api.get(`/orders/${order.id}`);
+            const items = r.data.items || [];
+            setOrderItems(items);
+            // Pre-fill discounts from existing order data
+            const discMap = {};
+            items.forEach(it => { discMap[it.id] = parseFloat(it.discount_pct || 0); });
+            setItemDiscounts(discMap);
+        }
         catch { setError('Failed to load order items.'); }
         finally { setLoadingDetails(false); }
     };
+
+    // Helpers — same formula as NewOrder
+    const calcBaseRate = (mrp, gst) => parseFloat(mrp || 0) / (1 + parseFloat(gst || 0) / 100);
+    const calcBilledRate = (mrp, gst, disc) => calcBaseRate(mrp, gst) * (1 - parseFloat(disc || 0) / 100);
+    const calcLineAmt = (mrp, gst, disc, qty) => calcBilledRate(mrp, gst, disc) * parseInt(qty || 1);
+
+    const computedTotal = orderItems.reduce((s, it) => {
+        const disc = itemDiscounts[it.id] ?? parseFloat(it.discount_pct || 0);
+        return s + calcLineAmt(it.mrp, it.gst_rate, disc, it.qty_billed ?? it.qty_ordered);
+    }, 0);
 
     const handleBill = async (orderId) => {
         if (!billNum.trim()) return setError('Bill number is required.');
         setSubmitting(true); setError('');
         try {
-            await api.patch(`/orders/${orderId}/bill`, { bill_number: billNum, bill_date: billDate, final_amount: finalAmount });
+            const billingItems = orderItems.map(it => ({
+                id: it.id,
+                qty_billed: it.qty_billed ?? it.qty_ordered,
+                discount_pct: itemDiscounts[it.id] ?? parseFloat(it.discount_pct || 0),
+                line_amount: parseFloat(calcLineAmt(
+                    it.mrp, it.gst_rate,
+                    itemDiscounts[it.id] ?? it.discount_pct,
+                    it.qty_billed ?? it.qty_ordered
+                ).toFixed(2)),
+            }));
+            const finalAmt = parseFloat(computedTotal.toFixed(2));
+            await api.patch(`/orders/${orderId}/bill`, {
+                bill_number: billNum,
+                bill_date: billDate,
+                final_amount: finalAmt,
+                items: billingItems,
+            });
             const billedOrder = orders.find(o => o.id === orderId);
-            setLastBilledOrder({ ...billedOrder, bill_number: billNum, bill_date: billDate, total_amount: finalAmount || billedOrder?.total_amount, status: 'BILLED' });
+            setLastBilledOrder({ ...billedOrder, bill_number: billNum, bill_date: billDate, total_amount: finalAmt, status: 'BILLED' });
             setSuccess('Order marked as BILLED! You can now print the invoice.');
-            setSelected(null); setBillNum(''); setOrderItems([]);
+            setSelected(null); setBillNum(''); setOrderItems([]); setItemDiscounts({});
             loadQueue();
         } catch (err) {
             setError(err.response?.data?.error || 'Failed to update.');
@@ -247,47 +282,70 @@ export default function BillingQueue() {
                                 <p className="font-bold text-brand-700">₹{parseFloat(o.total_amount).toLocaleString('en-IN')}</p>
                             </div>
 
-                            {selected === o.id ? (
-                                <div className="mt-3 space-y-3 border-t border-gray-100 pt-3">
-                                    <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
-                                        <h3 className="text-xs font-bold text-gray-700 mb-2">Ordered Items</h3>
-                                        {loadingDetails ? <p className="text-xs text-gray-400">Loading...</p> : orderItems.length > 0 ? (
-                                            <div className="space-y-1.5">
-                                                {orderItems.map((item, i) => (
-                                                    <div key={i} className="flex justify-between text-xs">
-                                                        <span className="text-gray-800 flex-1 truncate pr-2">{item.qty_ordered}x {item.product_name}</span>
-                                                        <span className="text-gray-600 font-medium">₹{parseFloat(item.line_amount).toLocaleString('en-IN')}</span>
+                            {selected === o.id ? (<div className="mt-3 space-y-3 border-t border-gray-100 pt-3">
+                                <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
+                                    <h3 className="text-xs font-bold text-gray-700 mb-2">Order Items — Adjust Discount %</h3>
+                                    {loadingDetails ? <p className="text-xs text-gray-400">Loading...</p> : orderItems.length > 0 ? (
+                                        <div className="space-y-3">
+                                            {orderItems.map((item) => {
+                                                const disc = itemDiscounts[item.id] ?? parseFloat(item.discount_pct || 0);
+                                                const qty = item.qty_billed ?? item.qty_ordered;
+                                                const baseRate = calcBaseRate(item.mrp, item.gst_rate);
+                                                const billedRate = calcBilledRate(item.mrp, item.gst_rate, disc);
+                                                const lineAmt = calcLineAmt(item.mrp, item.gst_rate, disc, qty);
+                                                return (
+                                                    <div key={item.id} className="border border-gray-200 rounded-lg p-2 bg-white">
+                                                        <div className="flex justify-between items-start mb-1.5">
+                                                            <span className="text-xs font-semibold text-gray-800 flex-1 pr-2">{qty}× {item.product_name}</span>
+                                                            <span className="text-xs font-bold text-brand-700">₹{lineAmt.toFixed(2)}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 text-[10px] text-gray-500 mb-2">
+                                                            <span>MRP ₹{parseFloat(item.mrp || 0).toFixed(2)}</span>
+                                                            <span>•</span>
+                                                            <span>Base ₹{baseRate.toFixed(2)}</span>
+                                                            <span>•</span>
+                                                            <span className="text-brand-600 font-semibold">Billed ₹{billedRate.toFixed(2)}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <label className="text-[10px] text-gray-500 shrink-0">Disc %</label>
+                                                            <input
+                                                                type="number" min="0" max="100" step="0.5"
+                                                                className="input py-1 text-sm w-24"
+                                                                value={disc}
+                                                                onChange={e => setItemDiscounts(d => ({ ...d, [item.id]: parseFloat(e.target.value || 0) }))}
+                                                            />
+                                                            <span className="text-[10px] text-gray-400">% off base rate</span>
+                                                        </div>
                                                     </div>
-                                                ))}
-                                                <div className="flex justify-between text-xs font-bold text-gray-800 pt-1.5 border-t border-gray-200 mt-1.5">
-                                                    <span>Total</span><span>₹{parseFloat(o.total_amount).toLocaleString('en-IN')}</span>
-                                                </div>
+                                                );
+                                            })}
+                                            <div className="flex justify-between text-sm font-bold text-gray-800 pt-1.5 border-t border-gray-200">
+                                                <span>Computed Total</span>
+                                                <span className="text-brand-700">₹{computedTotal.toFixed(2)}</span>
                                             </div>
-                                        ) : <p className="text-xs text-red-500">No items found.</p>}
-                                    </div>
-
-                                    <div><label className="label text-xs">Final Billed Amount (₹) *</label>
-                                        <input type="number" step="0.01" className="input font-bold text-brand-700" value={finalAmount} onChange={e => setFinalAmount(e.target.value)} required /></div>
-                                    <div><label className="label text-xs">Bill Number *</label>
-                                        <input type="text" className="input" value={billNum} onChange={e => setBillNum(e.target.value)} placeholder="e.g. INV-2026-001" required /></div>
-                                    <div><label className="label text-xs">Bill Date</label>
-                                        <input type="date" className="input" value={billDate} onChange={e => setBillDate(e.target.value)} /></div>
-
-                                    <div className="flex flex-col gap-2">
-                                        <div className="flex gap-2">
-                                            <button onClick={() => handleBill(o.id)} disabled={submitting || loadingDetails}
-                                                className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold disabled:opacity-50">
-                                                {submitting ? 'Saving…' : '✅ Confirm Bill'}
-                                            </button>
-                                            <button onClick={() => setSelected(null)}
-                                                className="flex-1 py-2.5 border border-gray-300 text-gray-600 rounded-xl text-sm font-semibold">Cancel</button>
                                         </div>
-                                        <button onClick={() => setShowCancelFor(o.id)}
-                                            className="w-full py-2 border border-red-300 text-red-600 bg-red-50 rounded-xl text-sm font-semibold hover:bg-red-100">
-                                            ⚠️ Request Cancellation
-                                        </button>
-                                    </div>
+                                    ) : <p className="text-xs text-red-500">No items found.</p>}
                                 </div>
+                                <div><label className="label text-xs">Bill Number *</label>
+                                    <input type="text" className="input" value={billNum} onChange={e => setBillNum(e.target.value)} placeholder="e.g. INV-2026-001" required /></div>
+                                <div><label className="label text-xs">Bill Date</label>
+                                    <input type="date" className="input" value={billDate} onChange={e => setBillDate(e.target.value)} /></div>
+
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex gap-2">
+                                        <button onClick={() => handleBill(o.id)} disabled={submitting || loadingDetails}
+                                            className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold disabled:opacity-50">
+                                            {submitting ? 'Saving…' : '✅ Confirm Bill'}
+                                        </button>
+                                        <button onClick={() => setSelected(null)}
+                                            className="flex-1 py-2.5 border border-gray-300 text-gray-600 rounded-xl text-sm font-semibold">Cancel</button>
+                                    </div>
+                                    <button onClick={() => setShowCancelFor(o.id)}
+                                        className="w-full py-2 border border-red-300 text-red-600 bg-red-50 rounded-xl text-sm font-semibold hover:bg-red-100">
+                                        ⚠️ Request Cancellation
+                                    </button>
+                                </div>
+                            </div>
                             ) : (
                                 <button onClick={() => handleSelectOrder(o)}
                                     className="mt-2 w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold">Mark as Billed</button>

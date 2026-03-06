@@ -16,8 +16,7 @@ export default function NewOrder() {
     const [form, setForm] = useState({
         retailer_id: '',
         order_date: new Date().toISOString().slice(0, 10),
-        items: [{ product_id: '', qty_ordered: 1, unit_price: '' }],
-        discount: 0,
+        items: [{ product_id: '', qty_ordered: 1, discount_pct: 0 }],
         notes: '',
     });
     const [loading, setLoading] = useState(false);
@@ -66,7 +65,7 @@ export default function NewOrder() {
     };
 
     const addItem = () =>
-        setForm(f => ({ ...f, items: [...f.items, { product_id: '', qty_ordered: 1, unit_price: '' }] }));
+        setForm(f => ({ ...f, items: [...f.items, { product_id: '', qty_ordered: 1, discount_pct: 0 }] }));
 
     const removeItem = (i) =>
         setForm(f => ({ ...f, items: f.items.filter((_, idx) => idx !== i) }));
@@ -75,19 +74,19 @@ export default function NewOrder() {
         setForm(f => {
             const items = [...f.items];
             items[i] = { ...items[i], [field]: value };
-            if (field === 'product_id') {
-                const p = products.find(p => String(p.id) === String(value));
-                if (p) items[i].unit_price = p.sale_price;
-            }
             return { ...f, items };
         });
 
+    // Pricing helpers
+    const getProductById = (id) => products.find(p => String(p.id) === String(id));
+    const calcBaseRate = (p) => p ? parseFloat(p.mrp || 0) / (1 + (parseFloat(p.gst_rate || 0) / 100)) : 0;
+    const calcBilledRate = (p, disc) => calcBaseRate(p) * (1 - parseFloat(disc || 0) / 100);
+    const calcLineAmount = (p, qty, disc) => calcBilledRate(p, disc) * parseInt(qty || 1);
+
     const totalAmount = form.items.reduce((s, it) => {
-        const p = products.find(p => String(p.id) === String(it.product_id));
-        const price = parseFloat(it.unit_price) || (p?.sale_price || 0);
-        const gst = p?.gst_rate || 0;
-        return s + (price * parseInt(it.qty_ordered || 1)) * (1 + gst / 100);
-    }, 0) - parseFloat(form.discount || 0);
+        const p = getProductById(it.product_id);
+        return s + calcLineAmount(p, it.qty_ordered, it.discount_pct);
+    }, 0);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -97,7 +96,22 @@ export default function NewOrder() {
         if (!validItems.length) return setError('Please add at least one item.');
         setLoading(true);
         try {
-            const { data } = await api.post('/orders', { ...form, items: validItems });
+            // Send discount_pct per item; backend computes unit_price from MRP
+            const payload = {
+                retailer_id: form.retailer_id,
+                order_date: form.order_date,
+                notes: form.notes,
+                items: validItems.map(it => {
+                    const p = getProductById(it.product_id);
+                    return {
+                        product_id: it.product_id,
+                        qty_ordered: it.qty_ordered,
+                        unit_price: calcBaseRate(p).toFixed(2),
+                        discount_pct: parseFloat(it.discount_pct || 0),
+                    };
+                }),
+            };
+            const { data } = await api.post('/orders', payload);
             setSuccess(`Order ${data.order_number} created! Total: ₹${data.total_amount}`);
             setTimeout(() => navigate('/orders'), 2000);
         } catch (err) {
@@ -181,30 +195,53 @@ export default function NewOrder() {
                                         <option key={p.id} value={p.id}>{p.name} ({p.unit}) — ₹{p.sale_price}</option>
                                     ))}
                                 </select>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <label className="label text-xs">Qty</label>
-                                        <input type="number" min="1" className="input" value={item.qty_ordered}
-                                            onChange={e => updateItem(i, 'qty_ordered', e.target.value)} required />
-                                    </div>
-                                    <div>
-                                        <label className="label text-xs">Rate (₹)</label>
-                                        <div className="input bg-gray-50 flex items-center h-[42px] text-gray-600 font-medium">
-                                            {item.unit_price ? `₹${item.unit_price}` : '—'}
+                                {(() => {
+                                    const p = getProductById(item.product_id);
+                                    const baseRate = calcBaseRate(p);
+                                    const billedRate = calcBilledRate(p, item.discount_pct);
+                                    const lineAmt = calcLineAmount(p, item.qty_ordered, item.discount_pct);
+                                    return (
+                                        <div className="space-y-2">
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div>
+                                                    <label className="label text-xs">Qty</label>
+                                                    <input type="number" min="1" className="input" value={item.qty_ordered}
+                                                        onChange={e => updateItem(i, 'qty_ordered', e.target.value)} required />
+                                                </div>
+                                                <div>
+                                                    <label className="label text-xs">Discount %</label>
+                                                    <input type="number" min="0" max="100" step="0.5" className="input"
+                                                        placeholder="0"
+                                                        value={item.discount_pct}
+                                                        onChange={e => updateItem(i, 'discount_pct', e.target.value)} />
+                                                </div>
+                                            </div>
+                                            {p && (
+                                                <div className="grid grid-cols-3 gap-1 text-xs bg-gray-50 rounded-lg p-2">
+                                                    <div className="text-center">
+                                                        <div className="text-gray-400">MRP</div>
+                                                        <div className="font-semibold">₹{parseFloat(p.mrp || 0).toFixed(2)}</div>
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <div className="text-gray-400">Base Rate</div>
+                                                        <div className="font-semibold">₹{baseRate.toFixed(2)}</div>
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <div className="text-gray-400">Billed Rate</div>
+                                                        <div className="font-bold text-brand-700">₹{billedRate.toFixed(2)}</div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {p && <div className="text-right text-xs font-bold text-gray-700">Line Total: ₹{lineAmt.toFixed(2)}</div>}
                                         </div>
-                                    </div>
-                                </div>
+                                    );
+                                })()}
                             </div>
                         ))}
                     </div>
                 </div>
 
                 {/* Discount & Notes */}
-                <div>
-                    <label className="label">Discount (₹)</label>
-                    <input type="number" step="0.01" min="0" className="input" value={form.discount}
-                        onChange={e => setForm(f => ({ ...f, discount: e.target.value }))} />
-                </div>
                 <div>
                     <label className="label">Notes</label>
                     <textarea className="input" rows="2" value={form.notes}
