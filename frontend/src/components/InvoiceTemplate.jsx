@@ -4,12 +4,12 @@ import React from 'react';
 // COMPANY CONFIG — Edit these values to update company details on invoice
 // ─────────────────────────────────────────────────────────────────────────────
 const COMPANY = {
-    name: 'Panchsugandh',
-    tagline: 'Premium Quality Products',
-    address: '123, Main Market, Your City, State - 000000',
-    phone: '+91 99999 99999',
-    email: 'info@panchsugandh.com',
-    gstin: '23AAAAA0000A1Z5',
+    name: 'SJD Developer',
+    tagline: 'Panchsugandh',
+    address: '41 HIG Vikash Colony Jhunsi Prayagraj, Uttar Pradesh - 211019',
+    phone: '+91 915065552',
+    email: 'info@sjddeveloper.com',
+    gstin: '09AIBPT6458J2ZM',
     logoUrl: '/assets/images/logo.jpeg', // Logo path
 };
 
@@ -18,12 +18,12 @@ const COMPANY = {
 // ─────────────────────────────────────────────────────────────────────────────
 const PAYMENT_DETAILS = {
     show: true,
-    bankName: '[Your Bank Name]',
-    accountName: '[Your Account Name]',
-    accountNumber: '[Your Account Number]',
-    ifscCode: '[Your IFSC Code]',
-    upiId: '[Your UPI ID]',
-    qrCodeUrl: '', // Add a QR code image URL here (e.g., '/images/qr.png' or base64)
+    bankName: 'Bank of Baroda',
+    accountName: 'SJD Developers',
+    accountNumber: '06590200000593',
+    ifscCode: 'BARB0MULALL',
+    upiId: 'sjdcss-1@okaxis',
+    qrCodeUrl: '/assets/images/QR.jpg', // Add a QR code image URL here (e.g., '/images/qr.png' or base64)
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -39,8 +39,8 @@ const INVOICE_CONFIG = {
     showTerms: true,           // Show terms & conditions
     terms: [
         'Goods once sold will not be taken back.',
-        'Payment due within 30 days of invoice date.',
-        'Subject to local jurisdiction.',
+        'Payment due within 15 days of invoice date.',
+        'Subject to Prayagraj jurisdiction.',
     ],
     thankYouMessage: 'Thank you for your business! We appreciate your trust.',
 };
