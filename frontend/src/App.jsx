@@ -38,6 +38,13 @@ import AttendanceReport from './pages/admin/AttendanceReport';
 import Reports from './pages/admin/Reports';
 import Chat from './pages/Chat';
 
+// Store Management (New Production System)
+import RawMaterials from './pages/Store/RawMaterials';
+import BOMManager from './pages/Store/BOMManager';
+import ProductionEntry from './pages/Store/ProductionEntry';
+import SampleManagement from './pages/Store/SampleManagement';
+
+
 function RoleRouter() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
@@ -133,6 +140,18 @@ export default function App() {
           } />
           <Route path="/store/products" element={
             <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin', 'bill_operator']}><AdaptiveLayout><ProductsList /></AdaptiveLayout></ProtectedRoute>
+          } />
+          <Route path="/store/raw-materials" element={
+            <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin']}><AdaptiveLayout><RawMaterials /></AdaptiveLayout></ProtectedRoute>
+          } />
+          <Route path="/store/bom" element={
+            <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin']}><AdaptiveLayout><BOMManager /></AdaptiveLayout></ProtectedRoute>
+          } />
+          <Route path="/store/production" element={
+            <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin']}><AdaptiveLayout><ProductionEntry /></AdaptiveLayout></ProtectedRoute>
+          } />
+          <Route path="/store/samples" element={
+            <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin', 'bill_operator']}><AdaptiveLayout><SampleManagement /></AdaptiveLayout></ProtectedRoute>
           } />
 
           {/* ── Sales Officer ── */}

@@ -14,6 +14,7 @@ const NAV_CONFIG = {
     ],
     bill_operator: [
         { label: 'Queue', icon: '📄', path: '/billing' },
+        { label: 'Samples', icon: '🎁', path: '/store/samples' },
         { label: 'Parties', icon: '🏪', path: '/store/retailers' },
         { label: 'Products', icon: '📦', path: '/store/products' },
         { label: 'Chat', icon: '💬', path: '/chat', badge: true },
@@ -24,9 +25,11 @@ const NAV_CONFIG = {
         { label: 'Chat', icon: '💬', path: '/chat', badge: true },
     ],
     store_incharge: [
-        { label: 'Dashboard', icon: '📊', path: '/store' },
-        { label: 'Orders', icon: '📋', path: '/store/orders' },
+        { label: 'Production', icon: '⚙️', path: '/store/production' },
+        { label: 'Raw Materials', icon: '🏗️', path: '/store/raw-materials' },
+        { label: 'BOM', icon: '📜', path: '/store/bom' },
         { label: 'Products', icon: '📦', path: '/store/products' },
+        { label: 'Orders', icon: '📋', path: '/store/orders' },
         { label: 'Chat', icon: '💬', path: '/chat', badge: true },
     ],
     sales_officer: [
@@ -38,6 +41,7 @@ const NAV_CONFIG = {
     admin: [
         { label: 'Dashboard', icon: '📊', path: '/dashboard' },
         { label: 'Orders', icon: '📋', path: '/orders' },
+        { label: 'Store Management', icon: '🏬', path: '/store/production' },
         { label: 'Users', icon: '👤', path: '/admin/users' },
         { label: 'Tracking', icon: '📍', path: '/admin/tracking' },
         { label: 'Reports', icon: '📊', path: '/reports' },
@@ -46,6 +50,7 @@ const NAV_CONFIG = {
     super_admin: [
         { label: 'Dashboard', icon: '📊', path: '/dashboard' },
         { label: 'Orders', icon: '📋', path: '/orders' },
+        { label: 'Store Management', icon: '🏬', path: '/store/production' },
         { label: 'Users', icon: '👤', path: '/admin/users' },
         { label: 'Tracking', icon: '📍', path: '/admin/tracking' },
         { label: 'Reports', icon: '📊', path: '/reports' },

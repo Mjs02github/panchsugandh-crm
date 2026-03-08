@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../../api';
 
 export default function StoreDashboard() {
-    const [stats, setStats] = useState({ toPack: 0, lowStock: 0 });
+    const [stats, setStats] = useState({ toPack: 0, lowStock: 0, bomMissing: 0, pendingSamples: 0 });
     const [lowStockItems, setLowStockItems] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -19,13 +19,18 @@ export default function StoreDashboard() {
                 const products = productsRes.data || [];
                 const lowStockList = products.filter(p => p.qty_on_hand < 10);
 
+                // Fetch Sample Requests
+                const samplesRes = await api.get('/store/samples');
+                const pendingSamples = samplesRes.data.filter(s => s.status === 'PENDING').length;
+
                 setStats({
                     toPack: toPackCount,
-                    lowStock: lowStockList.length
+                    lowStock: lowStockList.length,
+                    pendingSamples: pendingSamples
                 });
 
-                // Show up to 5 low stock items directly on dash
-                setLowStockItems(lowStockList.slice(0, 5));
+                // Show up to 3 low stock items
+                setLowStockItems(lowStockList.slice(0, 3));
             } catch (err) {
                 console.error("Dashboard fetch error", err);
             } finally {
@@ -37,85 +42,109 @@ export default function StoreDashboard() {
     }, []);
 
     return (
-        <div className="pb-24">
-            <header className="page-header py-4 px-5 border-b shadow-sm">
-                <h1 className="text-xl font-bold text-gray-800">Store Dashboard</h1>
-                <p className="text-xs text-gray-500 mt-0.5">Welcome back! Here's your daily summary.</p>
+        <div className="pb-24 max-w-5xl mx-auto">
+            <header className="page-header py-6">
+                <h1 className="text-3xl font-black text-gray-900 tracking-tight">Store & Production</h1>
+                <p className="text-gray-500 font-medium">Manage inventory, define BOM, and log production batches.</p>
             </header>
 
-            <main className="p-4 space-y-5">
-                {/* Stats Cards */}
-                <div className="grid grid-cols-2 gap-3">
-                    <Link to="/store/orders" className="bg-gradient-to-br from-brand-50 to-white p-4 rounded-2xl border border-brand-100 shadow-sm flex flex-col justify-between aspect-[4/3]">
-                        <div className="w-10 h-10 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center text-xl mb-2 shadow-inner">
-                            📦
-                        </div>
-                        <div>
-                            <p className="text-3xl font-black text-gray-800 tracking-tight leading-none mb-1">
-                                {loading ? '-' : stats.toPack}
-                            </p>
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">To Pack</p>
-                        </div>
-                    </Link>
-
-                    <Link to="/store/products" className="bg-gradient-to-br from-red-50 to-white p-4 rounded-2xl border border-red-100 shadow-sm flex flex-col justify-between aspect-[4/3]">
-                        <div className="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xl mb-2 shadow-inner">
-                            ⚠️
-                        </div>
-                        <div>
-                            <p className="text-3xl font-black text-gray-800 tracking-tight leading-none mb-1">
-                                {loading ? '-' : stats.lowStock}
-                            </p>
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Low Stock</p>
-                        </div>
+            <main className="space-y-8">
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">To Pack</p>
+                        <p className="text-3xl font-black text-brand-600">{stats.toPack}</p>
+                    </div>
+                    <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Low Stock</p>
+                        <p className="text-3xl font-black text-red-600">{stats.lowStock}</p>
+                    </div>
+                    <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Sample Req</p>
+                        <p className="text-3xl font-black text-amber-600">{stats.pendingSamples}</p>
+                    </div>
+                    <Link to="/store/production" className="bg-brand-600 p-5 rounded-2xl shadow-lg shadow-brand-100 flex flex-col justify-end">
+                        <p className="text-xs font-bold text-white/70 uppercase tracking-widest mb-1">Status</p>
+                        <p className="text-lg font-bold text-white">Log Packing →</p>
                     </Link>
                 </div>
 
-                {/* Low Stock Alerts */}
-                {lowStockItems.length > 0 && (
-                    <div className="bg-white rounded-2xl shadow-sm border border-red-100 overflow-hidden">
-                        <div className="px-4 py-3 bg-red-50 border-b border-red-100 flex justify-between items-center">
-                            <h2 className="text-sm font-bold text-red-800 flex items-center gap-1.5">
-                                <span className="text-red-500">⭕</span> Re-Order Needed
-                            </h2>
-                            <Link to="/store/products" className="text-xs font-semibold text-red-600 hover:text-red-700">
-                                View All →
+                {/* Main Management Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Production Management */}
+                    <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-4">
+                        <h2 className="text-lg font-bold flex items-center gap-2">
+                            <span className="p-2 bg-blue-50 rounded-lg">⚙️</span> Production System
+                        </h2>
+                        <div className="grid grid-cols-1 gap-3">
+                            <Link to="/store/production" className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-brand-50 transition-colors group">
+                                <div>
+                                    <p className="font-bold text-gray-900">Production Entry</p>
+                                    <p className="text-xs text-gray-500">Log finished goods batches</p>
+                                </div>
+                                <span className="group-hover:translate-x-1 transition-transform">→</span>
+                            </Link>
+                            <Link to="/store/bom" className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-brand-50 transition-colors group">
+                                <div>
+                                    <p className="font-bold text-gray-900">BOM Management</p>
+                                    <p className="text-xs text-gray-500">Define material recipes</p>
+                                </div>
+                                <span className="group-hover:translate-x-1 transition-transform">→</span>
                             </Link>
                         </div>
-                        <div className="divide-y divide-gray-50">
-                            {lowStockItems.map(item => (
-                                <div key={item.id} className="p-4 flex items-center justify-between">
-                                    <div>
-                                        <p className="font-semibold text-gray-800 text-sm">{item.name}</p>
-                                        <p className="text-[10px] text-gray-500 mt-0.5">{item.category} • SKU: {item.sku || 'N/A'}</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <span className="inline-block px-2.5 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-lg shadow-sm">
-                                            {item.qty_on_hand} {item.unit}
-                                        </span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
                     </div>
-                )}
 
-                {/* Quick Actions */}
-                <div className="mt-8">
-                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 px-1">Quick Actions</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                        <Link to="/store/orders" className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">🚚</div>
-                            <span className="font-semibold text-sm text-gray-700">Pack Orders</span>
-                        </Link>
-                        <Link to="/store/inward" className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center text-xl">📥</div>
-                            <span className="font-semibold text-sm text-gray-700">Inward Stock</span>
-                        </Link>
+                    {/* Inventory Management */}
+                    <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-4">
+                        <h2 className="text-lg font-bold flex items-center gap-2">
+                            <span className="p-2 bg-green-50 rounded-lg">📦</span> Stock Control
+                        </h2>
+                        <div className="grid grid-cols-1 gap-3">
+                            <Link to="/store/raw-materials" className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-brand-50 transition-colors group">
+                                <div>
+                                    <p className="font-bold text-gray-900">Raw Materials</p>
+                                    <p className="text-xs text-gray-500">Packing jars, caps, etc.</p>
+                                </div>
+                                <span className="group-hover:translate-x-1 transition-transform">→</span>
+                            </Link>
+                            <Link to="/store/products" className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-brand-50 transition-colors group">
+                                <div>
+                                    <p className="font-bold text-gray-900">Finished Goods</p>
+                                    <p className="text-xs text-gray-500">Ready for sale inventory</p>
+                                </div>
+                                <span className="group-hover:translate-x-1 transition-transform">→</span>
+                            </Link>
+                        </div>
                     </div>
                 </div>
 
-            </main>
+                {/* Bottom Row */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Samples */}
+                    <div className="md:col-span-1 bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                        <h2 className="text-lg font-bold flex items-center gap-2 mb-4">
+                            <span className="p-2 bg-amber-50 rounded-lg">🎁</span> Sample Issues
+                        </h2>
+                        <Link to="/store/samples" className="block p-4 bg-amber-50 text-amber-800 rounded-2xl font-bold text-center hover:bg-amber-100 transition-colors">
+                            Manage Sample Requests ({stats.pendingSamples})
+                        </Link>
                     </div>
+
+                    {/* Orders Queue Link */}
+                    <div className="md:col-span-2 bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-2xl font-bold">📋</div>
+                            <div>
+                                <h2 className="text-lg font-bold text-gray-900">Packing Orders Queue</h2>
+                                <p className="text-sm text-gray-500 font-medium">You have {stats.toPack} orders waiting to be packed and shipped.</p>
+                            </div>
+                        </div>
+                        <Link to="/store/orders" className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-shadow shadow-md shadow-indigo-100">
+                            Open Queue
+                        </Link>
+                    </div>
+                </div>
+            </main>
+        </div>
     );
 }
