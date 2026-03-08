@@ -42,7 +42,15 @@ export default function Login() {
             {/* --- CUSTOM HEADER --- */}
             <div className="bg-white shadow-md rounded-b-3xl px-6 py-5 flex items-center gap-4 z-10">
                 {/* Company logo */}
-                <img src="assets/images/logo.jpeg" alt="Panchsugandh Logo" className="w-16 h-16 rounded-xl object-cover shrink-0 shadow-sm" />
+                <img
+                    src="assets/images/logo.jpeg"
+                    alt="Panchsugandh Logo"
+                    className="w-16 h-16 rounded-xl object-cover shrink-0 shadow-sm"
+                    onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.outerHTML = '<div class="w-16 h-16 bg-brand-50 rounded-xl flex items-center justify-center text-brand-600 font-black text-2xl shadow-inner">P</div>';
+                    }}
+                />
                 <div className="flex flex-col">
                     <h1 className="text-2xl font-black text-gray-900 tracking-tight">Sjd Developer</h1>
                     <h2 className="text-lg font-bold text-red-600">Panchsugandh</h2>

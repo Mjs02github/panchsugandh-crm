@@ -78,8 +78,20 @@ export default function DesktopLayout({ children }) {
 
             {/* Sidebar */}
             <aside className="w-64 bg-white border-r border-gray-200 flex flex-col shrink-0">
-                <div className="h-16 flex items-center px-6 border-b border-gray-200">
-                    <h1 className="text-xl font-bold text-brand-600 truncate">Panchsugandh CRM</h1>
+                <div className="h-16 flex items-center px-6 border-b border-gray-200 gap-3">
+                    <div className="w-8 h-8 rounded-lg overflow-hidden bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
+                        <img
+                            src="assets/images/logo.jpeg"
+                            alt="Logo"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                                e.target.onerror = null;
+                                // Fallback icon if logo.jpeg is missing
+                                e.target.outerHTML = '<div class="text-brand-600 font-bold text-sm">P</div>';
+                            }}
+                        />
+                    </div>
+                    <h1 className="text-lg font-bold text-gray-800 truncate">Panchsugandh</h1>
                 </div>
 
                 <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
@@ -129,19 +141,6 @@ export default function DesktopLayout({ children }) {
 
             {/* Main Content */}
             <main className="flex-1 overflow-y-auto w-full relative">
-                {/* Floating Logo in Top Right */}
-                <div className="absolute top-4 right-6 z-40 bg-white p-2 rounded-xl shadow-sm border border-gray-100">
-                    <img
-                        src="assets/images/logo.jpeg"
-                        alt="Logo"
-                        className="h-10 w-auto object-contain"
-                        onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.outerHTML = '<div class="text-brand-600 font-bold px-2 py-1">Panchsugandh</div>';
-                        }}
-                    />
-                </div>
-
                 <div className="p-4 md:p-6 pb-24 h-full">
                     {children}
                 </div>
