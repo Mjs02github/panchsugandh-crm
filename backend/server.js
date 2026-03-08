@@ -12,20 +12,24 @@ const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:5174',
     'http://localhost:5175',
+    'http://localhost:3000',
     'https://vbnm.club'
 ];
 
 app.use(cors({
     origin: function (origin, callback) {
-        // Allow Capacitor Android (http/https localhost), generic localhost, or existing origins
+        // Allow Capacitor, Electron (file://), generic localhost, or existing origins
         if (!origin ||
             allowedOrigins.includes(origin) ||
             process.env.FRONTEND_URL === origin ||
             origin.startsWith('http://localhost') ||
             origin.startsWith('https://localhost') ||
-            origin.startsWith('capacitor://localhost')) {
+            origin.startsWith('capacitor://localhost') ||
+            origin.startsWith('file://') ||
+            origin.startsWith('app://')) {
             callback(null, true);
         } else {
+            console.warn(`Blocked by CORS: ${origin}`);
             callback(new Error('Not allowed by CORS'));
         }
     },
@@ -76,9 +80,23 @@ app.use('/api/attendance', require('./routes/attendance'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/chat', require('./routes/chat'));
 
-// ── Health check ────────────────────────────────────────────
-app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', time: new Date().toISOString() });
+// ── Health check (verify server + DB) ───────────────────────
+app.get('/api/health', async (req, res) => {
+    try {
+        const [rows] = await require('./db').query('SELECT 1 as online');
+        res.json({
+            status: 'ok',
+            database: rows[0].online === 1 ? 'connected' : 'error',
+            time: new Date().toISOString()
+        });
+    } catch (err) {
+        res.status(503).json({
+            status: 'degraded',
+            database: 'disconnected',
+            error: err.message,
+            time: new Date().toISOString()
+        });
+    }
 });
 
 // ── Serve Frontend ────────────────────────────────────────────
