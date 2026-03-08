@@ -23,7 +23,7 @@ export default function Header() {
                     <div className="w-10 h-10 rounded-lg overflow-hidden bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
                         {/* Replace this with an actual logo image in public/assets/images */}
                         <img
-                            src="/assets/images/logo.jpeg"
+                            src="assets/images/logo.jpeg"
                             alt="Logo"
                             className="w-full h-full object-cover"
                             onError={(e) => {

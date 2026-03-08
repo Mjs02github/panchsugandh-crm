@@ -10,7 +10,7 @@ const COMPANY = {
     phone: '+91 915065552',
     email: 'info@sjddeveloper.com',
     gstin: '09AIBPT6458J2ZM',
-    logoUrl: '/assets/images/logo.jpeg', // Logo path
+    logoUrl: 'assets/images/logo.jpeg', // Logo path
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -23,7 +23,7 @@ const PAYMENT_DETAILS = {
     accountNumber: '06590200000593',
     ifscCode: 'BARB0MULALL',
     upiId: 'sjdcss-1@okaxis',
-    qrCodeUrl: '/assets/images/QR.jpg', // Add a QR code image URL here (e.g., '/images/qr.png' or base64)
+    qrCodeUrl: 'assets/images/QR.jpg', // Add a QR code image URL here (e.g., '/images/qr.png' or base64)
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -127,7 +127,7 @@ export default function DesktopLayout({ children }) {
                 {/* Floating Logo in Top Right */}
                 <div className="absolute top-4 right-6 z-40 bg-white p-2 rounded-xl shadow-sm border border-gray-100">
                     <img
-                        src="/assets/images/logo.jpeg"
+                        src="assets/images/logo.jpeg"
                         alt="Logo"
                         className="h-10 w-auto object-contain"
                         onError={(e) => {
