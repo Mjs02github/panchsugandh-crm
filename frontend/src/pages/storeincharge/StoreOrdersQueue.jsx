@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api';
-import BottomNav from '../../components/BottomNav';
 
 export default function StoreOrdersQueue() {
     const [orders, setOrders] = useState([]);
@@ -181,7 +180,6 @@ export default function StoreOrdersQueue() {
                 )}
             </main>
 
-            <BottomNav />
-        </div>
+                    </div>
     );
 }

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api';
-import BottomNav from '../../components/BottomNav';
 import indiaStates from '../../utils/indiaStates.json';
 
 export default function NewOrder() {
@@ -265,7 +264,6 @@ export default function NewOrder() {
                 </button>
             </form>
 
-            <BottomNav />
-        </div>
+                    </div>
     );
 }

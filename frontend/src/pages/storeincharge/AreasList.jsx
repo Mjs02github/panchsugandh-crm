@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api';
-import BottomNav from '../../components/BottomNav';
 
 export default function AreasList() {
     const [areas, setAreas] = useState([]);
@@ -87,7 +86,6 @@ export default function AreasList() {
                     </div>
                 ))}
             </div>
-            <BottomNav />
-        </div>
+                    </div>
     );
 }

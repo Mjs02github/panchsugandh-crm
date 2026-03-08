@@ -58,7 +58,7 @@ const fmtDate = (d) => d ? new Date(d.split('T')[0]).toLocaleDateString('en-IN',
 function InvoiceHeader({ order }) {
     const isBilled = ['BILLED', 'READY_TO_SHIP', 'DELIVERED'].includes(order.status);
     return (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '3px solid #1a1a1a', paddingBottom: '16px', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '3px solid #1a1a1a', paddingBottom: '8px', marginBottom: '10px' }}>
             <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
                 {COMPANY.logoUrl && (
                     <img src={COMPANY.logoUrl} alt="Logo" style={{ maxHeight: '80px', maxWidth: '200px', objectFit: 'contain' }} onError={(e) => e.target.style.display = 'none'} />
@@ -90,7 +90,7 @@ function InvoiceHeader({ order }) {
 
 function PartySection({ order }) {
     return (
-        <div style={{ display: 'flex', gap: '32px', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', gap: '32px', marginBottom: '10px' }}>
             {/* Billed To */}
             <div style={{ flex: 1, padding: '12px', background: '#f8f8f8', borderRadius: '6px', borderLeft: '4px solid #1a1a1a' }}>
                 <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#888', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '1px' }}>Billed To</div>
@@ -107,9 +107,9 @@ function PartySection({ order }) {
             {/* Order Meta */}
             <div style={{ width: '180px', padding: '12px', background: '#f8f8f8', borderRadius: '6px' }}>
                 <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#888', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '1px' }}>Sales Info</div>
-                {order.salesperson_name && <div style={{ fontSize: '11px', color: '#555' }}>Salesperson: <strong>{order.salesperson_name}</strong></div>}
-                {order.order_date && <div style={{ fontSize: '11px', color: '#555', marginTop: '4px' }}>Order Date: {fmtDate(order.order_date)}</div>}
-                {order.billed_by_name && <div style={{ fontSize: '11px', color: '#555', marginTop: '4px' }}>Billed By: {order.billed_by_name}</div>}
+                {order.salesperson_name && <div style={{ fontSize: '11px', color: '#555' }}>Salesman: <strong>{order.salesperson_name}</strong></div>}
+                {order.order_date && <div style={{ fontSize: '11px', color: '#555', marginTop: '2px' }}>Date: {fmtDate(order.order_date)}</div>}
+                {order.billed_by_name && <div style={{ fontSize: '11px', color: '#555', marginTop: '2px' }}>Billed By: {order.billed_by_name}</div>}
             </div>
         </div>
     );
@@ -121,11 +121,11 @@ function ItemsTable({ items }) {
         return qty > 0;
     });
 
-    const thStyle = { padding: '8px 6px', fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #1a1a1a', background: '#1a1a1a', color: '#fff' };
-    const tdStyle = { padding: '7px 6px', fontSize: '12px', borderBottom: '1px solid #e0e0e0', verticalAlign: 'middle' };
+    const thStyle = { padding: '4px 4px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #1a1a1a', background: '#1a1a1a', color: '#fff' };
+    const tdStyle = { padding: '4px 4px', fontSize: '11px', borderBottom: '1px solid #e0e0e0', verticalAlign: 'middle' };
 
     return (
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '16px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px' }}>
             <thead>
                 <tr>
                     <th style={{ ...thStyle, textAlign: 'center', width: '36px' }}>#</th>
@@ -190,8 +190,8 @@ function TotalsBlock({ order, totalPaid }) {
     const valStyle = { fontWeight: '500' };
 
     return (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
-            <div style={{ width: '240px', padding: '14px', border: '1px solid #ddd', borderRadius: '8px', background: '#fafafa' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+            <div style={{ width: '220px', padding: '10px', border: '1px solid #ddd', borderRadius: '8px', background: '#fafafa' }}>
                 {INVOICE_CONFIG.showDiscount && discount > 0 && (
                     <div style={rowStyle}>
                         <span style={labelStyle}>Subtotal:</span>
@@ -235,7 +235,7 @@ function TotalsBlock({ order, totalPaid }) {
 function PaymentDetailsBlock() {
     if (!PAYMENT_DETAILS.show) return null;
     return (
-        <div style={{ padding: '12px', background: '#f8f8f8', borderRadius: '6px', borderTop: '2px solid #e0e0e0', marginBottom: '20px', display: 'flex', gap: '24px', alignItems: 'center' }}>
+        <div style={{ padding: '8px 12px', background: '#f8f8f8', borderRadius: '6px', borderTop: '2px solid #e0e0e0', marginBottom: '10px', display: 'flex', gap: '24px', alignItems: 'center' }}>
             <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#888', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>Payment Details</div>
                 <div style={{ fontSize: '11px', color: '#444', lineHeight: '1.6' }}>
@@ -258,7 +258,7 @@ function PaymentDetailsBlock() {
 function SignatureBlock() {
     if (!INVOICE_CONFIG.showSignatures) return null;
     return (
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px', paddingTop: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', paddingTop: '10px' }}>
             <div style={{ textAlign: 'center', width: '160px' }}>
                 <div style={{ borderTop: '1px solid #888', paddingTop: '8px', fontSize: '12px' }}>Customer Signature</div>
             </div>
@@ -275,7 +275,7 @@ function SignatureBlock() {
 function TermsBlock() {
     if (!INVOICE_CONFIG.showTerms || !INVOICE_CONFIG.terms.length) return null;
     return (
-        <div style={{ marginTop: '24px', padding: '10px 14px', background: '#f8f8f8', borderRadius: '6px', borderTop: '2px solid #e0e0e0' }}>
+        <div style={{ marginTop: '10px', padding: '8px 10px', background: '#f8f8f8', borderRadius: '6px', borderTop: '2px solid #e0e0e0' }}>
             <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#888', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>Terms & Conditions</div>
             {INVOICE_CONFIG.terms.map((t, i) => (
                 <div key={i} style={{ fontSize: '10px', color: '#666', marginBottom: '2px' }}>{i + 1}. {t}</div>
@@ -290,7 +290,7 @@ function TermsBlock() {
 export default function InvoiceTemplate({ order, items, totalPaid }) {
     if (!order) return null;
     return (
-        <div className="invoice-print-container hidden print:block" style={{ width: '210mm', minHeight: '297mm', margin: '0 auto', background: '#fff', color: '#1a1a1a', fontFamily: 'Arial, sans-serif', padding: '20mm 16mm' }}>
+        <div className="invoice-print-container hidden print:block" style={{ width: '210mm', minHeight: '297mm', margin: '0 auto', background: '#fff', color: '#1a1a1a', fontFamily: 'Arial, sans-serif', padding: '10mm 12mm' }}>
             <InvoiceHeader order={order} />
             <PartySection order={order} />
             <ItemsTable items={items} />

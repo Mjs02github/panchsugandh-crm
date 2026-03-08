@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api';
-import BottomNav from '../../components/BottomNav';
 
 // ── Role display helpers ─────────
 const ROLE_DISPLAY = {
@@ -374,7 +373,6 @@ export default function UserManagement() {
                 </div>
             )}
 
-            <BottomNav />
-        </div>
+                    </div>
     );
 }

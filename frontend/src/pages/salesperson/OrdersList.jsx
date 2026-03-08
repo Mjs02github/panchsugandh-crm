@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api';
-import BottomNav from '../../components/BottomNav';
 
 function StatusBadge({ status }) {
     const cls = {
@@ -158,7 +157,6 @@ export default function OrdersList() {
                     </div>
                 ))}
             </div>
-            <BottomNav />
-        </div>
+                    </div>
     );
 }

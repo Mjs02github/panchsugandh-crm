@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api';
-import BottomNav from '../../components/BottomNav';
 import InvoiceTemplate from '../../components/InvoiceTemplate';
 
 // ── Shared date filter ─────────────────────────────────────
@@ -438,8 +437,7 @@ export default function BillingQueue() {
                 </div>
             )}
 
-            <BottomNav />
-
+            
             {/* Hidden invoice for print */}
             {lastBilledOrder && <InvoiceTemplate order={lastBilledOrder} items={orderItems} totalPaid={0} />}
             {printOrder && <InvoiceTemplate order={printOrder} items={printItems} totalPaid={0} />}

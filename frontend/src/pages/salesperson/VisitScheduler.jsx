@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import api from '../../api';
-import BottomNav from '../../components/BottomNav';
 
 export default function VisitScheduler() {
     const [visits, setVisits] = useState([]);
@@ -206,7 +205,6 @@ export default function VisitScheduler() {
                     </div>
                 ))}
             </div>
-            <BottomNav />
-        </div>
+                    </div>
     );
 }

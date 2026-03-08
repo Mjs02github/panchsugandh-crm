@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api';
-import BottomNav from '../../components/BottomNav';
 
 export default function TeamList() {
     const [members, setMembers] = useState([]);
@@ -141,7 +140,6 @@ export default function TeamList() {
                     </div>
                 )}
             </div>
-            <BottomNav />
-        </div>
+                    </div>
     );
 }

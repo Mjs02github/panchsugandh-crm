@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api';
-import BottomNav from '../../components/BottomNav';
 
 export default function StoreDashboard() {
     const [stats, setStats] = useState({ toPack: 0, lowStock: 0 });
@@ -117,7 +116,6 @@ export default function StoreDashboard() {
                 </div>
 
             </main>
-            <BottomNav />
-        </div>
+                    </div>
     );
 }

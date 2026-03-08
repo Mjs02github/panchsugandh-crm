@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
-import BottomNav from '../components/BottomNav';
 
 const ROLE_COLOR = {
     super_admin: 'bg-purple-100 text-purple-700',
@@ -490,7 +489,6 @@ export default function Chat() {
             {showUserPicker && (
                 <UserPicker onSelect={openDM} onClose={() => setShowUserPicker(false)} />
             )}
-            <BottomNav />
-        </div>
+                    </div>
     );
 }

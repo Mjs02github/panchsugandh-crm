@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import api from '../../api';
-import BottomNav from '../../components/BottomNav';
 
 export default function ProductsList() {
     const [products, setProducts] = useState([]);
@@ -192,7 +191,6 @@ export default function ProductsList() {
                     </div>
                 ))}
             </div>
-            <BottomNav />
-        </div>
+                    </div>
     );
 }

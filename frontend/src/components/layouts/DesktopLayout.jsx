@@ -1,0 +1,111 @@
+import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+
+export default function DesktopLayout({ children }) {
+    const { user, logout } = useAuth();
+    const location = useLocation();
+
+    // Map roles to navigation items
+    const navItems = [];
+    const role = user?.role;
+
+    if (['admin', 'super_admin'].includes(role)) {
+        navItems.push(
+            { label: 'Dashboard', icon: '📊', path: '/dashboard' },
+            { label: 'Users', icon: '👥', path: '/admin/users' },
+            { label: 'Tracking', icon: '📍', path: '/admin/tracking' },
+            { label: 'Attendance', icon: '📅', path: '/admin/attendance' },
+            { label: 'Reports', icon: '📈', path: '/reports' },
+            { label: 'Orders', icon: '📋', path: '/orders' }
+        );
+    } else if (role === 'salesperson') {
+        navItems.push(
+            { label: 'Dashboard', icon: '📊', path: '/dashboard' },
+            { label: 'Orders', icon: '📋', path: '/orders' },
+            { label: 'Visits', icon: '📍', path: '/visits' },
+            { label: 'Payments', icon: '💰', path: '/payments' },
+            { label: 'Reports', icon: '📈', path: '/reports' }
+        );
+    } else if (role === 'store_incharge') {
+        navItems.push(
+            { label: 'Dashboard', icon: '📊', path: '/store' },
+            { label: 'Orders', icon: '📦', path: '/store/orders' },
+            { label: 'Inward', icon: '📥', path: '/store/inward' },
+            { label: 'Products', icon: '🏷️', path: '/store/products' },
+            { label: 'Retailers', icon: '🏪', path: '/store/retailers' }
+        );
+    } else if (role === 'bill_operator') {
+        navItems.push(
+            { label: 'Billing Queue', icon: '📄', path: '/billing' },
+            { label: 'Orders', icon: '📋', path: '/orders' }
+        );
+    } else if (role === 'delivery_incharge') {
+        navItems.push(
+            { label: 'Deliveries', icon: '🚚', path: '/delivery' },
+            { label: 'Orders', icon: '📋', path: '/orders' }
+        );
+    } else if (role === 'sales_officer') {
+        navItems.push(
+            { label: 'Dashboard', icon: '📊', path: '/dashboard' },
+            { label: 'Team', icon: '👥', path: '/team' },
+            { label: 'Orders', icon: '📋', path: '/orders' },
+            { label: 'Tracking', icon: '📍', path: '/admin/tracking' },
+            { label: 'Reports', icon: '📈', path: '/reports' }
+        );
+    }
+
+    navItems.push({ label: 'Chat', icon: '💬', path: '/chat' });
+
+    return (
+        <div className="flex h-screen bg-gray-50 overflow-hidden">
+            {/* Sidebar */}
+            <aside className="w-64 bg-white border-r border-gray-200 flex flex-col shrink-0">
+                <div className="h-16 flex items-center px-6 border-b border-gray-200">
+                    <h1 className="text-xl font-bold text-brand-600">Panchsugandh CRM</h1>
+                </div>
+
+                <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+                    {navItems.map((item) => {
+                        const isActive = location.pathname.startsWith(item.path);
+                        return (
+                            <Link
+                                key={item.path}
+                                to={item.path}
+                                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive
+                                        ? 'bg-brand-50 text-brand-700'
+                                        : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                                    }`}
+                            >
+                                <span className="text-lg">{item.icon}</span>
+                                {item.label}
+                            </Link>
+                        );
+                    })}
+                </div>
+
+                <div className="p-4 border-t border-gray-200">
+                    <div className="flex items-center gap-3 mb-4 px-2">
+                        <div className="w-8 h-8 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-bold">
+                            {user?.name?.charAt(0) || 'U'}
+                        </div>
+                        <div className="overflow-hidden">
+                            <p className="text-sm font-medium text-gray-900 truncate">{user?.name}</p>
+                            <p className="text-xs text-gray-500 capitalize truncate">{user?.role?.replace('_', ' ')}</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={logout}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                    >
+                        <span>🚪</span> Logout
+                    </button>
+                </div>
+            </aside>
+
+            {/* Main Content */}
+            <main className="flex-1 overflow-y-auto w-full relative">
+                {children}
+            </main>
+        </div>
+    );
+}

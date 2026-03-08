@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api';
-import BottomNav from '../../components/BottomNav';
 
 export default function PaymentEntry() {
     const navigate = useNavigate();
@@ -187,7 +186,6 @@ export default function PaymentEntry() {
                     {submitting ? 'Saving…' : '💾 Save Payment'}
                 </button>
             </form>
-            <BottomNav />
-        </div>
+                    </div>
     );
 }

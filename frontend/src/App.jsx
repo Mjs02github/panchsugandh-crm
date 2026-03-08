@@ -1,6 +1,7 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdaptiveLayout from './components/layouts/AdaptiveLayout';
 
 // Pages
 import Login from './pages/Login';
@@ -74,7 +75,7 @@ function GPSTracker() {
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <HashRouter>
         <GPSTracker />
         <Routes>
           {/* Public */}
@@ -85,81 +86,81 @@ export default function App() {
           <Route path="/" element={<ProtectedRoute><RoleRouter /></ProtectedRoute>} />
 
           {/* Dashboard — all roles */}
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><AdaptiveLayout><Dashboard /></AdaptiveLayout></ProtectedRoute>} />
 
           {/* ── Salesperson ── */}
           <Route path="/orders" element={
-            <ProtectedRoute roles={['salesperson', 'sales_officer', 'store_incharge', 'delivery_incharge', 'admin', 'super_admin']}><OrdersList /></ProtectedRoute>
+            <ProtectedRoute roles={['salesperson', 'sales_officer', 'store_incharge', 'delivery_incharge', 'admin', 'super_admin']}><AdaptiveLayout><OrdersList /></AdaptiveLayout></ProtectedRoute>
           } />
           <Route path="/orders/new" element={
-            <ProtectedRoute roles={['salesperson', 'admin', 'super_admin']}><NewOrder /></ProtectedRoute>
+            <ProtectedRoute roles={['salesperson', 'admin', 'super_admin']}><AdaptiveLayout><NewOrder /></AdaptiveLayout></ProtectedRoute>
           } />
           <Route path="/orders/:id" element={
-            <ProtectedRoute roles={['salesperson', 'sales_officer', 'bill_operator', 'delivery_incharge', 'store_incharge', 'admin', 'super_admin']}><OrderDetail /></ProtectedRoute>
+            <ProtectedRoute roles={['salesperson', 'sales_officer', 'bill_operator', 'delivery_incharge', 'store_incharge', 'admin', 'super_admin']}><AdaptiveLayout><OrderDetail /></AdaptiveLayout></ProtectedRoute>
           } />
           <Route path="/payments" element={
-            <ProtectedRoute roles={['salesperson', 'admin', 'super_admin']}><PaymentEntry /></ProtectedRoute>
+            <ProtectedRoute roles={['salesperson', 'admin', 'super_admin']}><AdaptiveLayout><PaymentEntry /></AdaptiveLayout></ProtectedRoute>
           } />
           <Route path="/visits" element={
-            <ProtectedRoute roles={['salesperson', 'sales_officer', 'admin', 'super_admin']}><VisitScheduler /></ProtectedRoute>
+            <ProtectedRoute roles={['salesperson', 'sales_officer', 'admin', 'super_admin']}><AdaptiveLayout><VisitScheduler /></AdaptiveLayout></ProtectedRoute>
           } />
 
           {/* ── Bill Operator ── */}
           <Route path="/billing" element={
-            <ProtectedRoute roles={['bill_operator', 'admin', 'super_admin']}><BillingQueue /></ProtectedRoute>
+            <ProtectedRoute roles={['bill_operator', 'admin', 'super_admin']}><AdaptiveLayout><BillingQueue /></AdaptiveLayout></ProtectedRoute>
           } />
 
           {/* ── Delivery In-charge ── */}
           <Route path="/delivery" element={
-            <ProtectedRoute roles={['delivery_incharge', 'admin', 'super_admin']}><DeliveryQueue /></ProtectedRoute>
+            <ProtectedRoute roles={['delivery_incharge', 'admin', 'super_admin']}><AdaptiveLayout><DeliveryQueue /></AdaptiveLayout></ProtectedRoute>
           } />
 
           {/* ── Store In-charge ── */}
           <Route path="/store" element={
-            <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin']}><StoreDashboard /></ProtectedRoute>
+            <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin']}><AdaptiveLayout><StoreDashboard /></AdaptiveLayout></ProtectedRoute>
           } />
           <Route path="/store/inward" element={
-            <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin']}><InwardStock /></ProtectedRoute>
+            <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin']}><AdaptiveLayout><InwardStock /></AdaptiveLayout></ProtectedRoute>
           } />
           <Route path="/store/orders" element={
-            <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin']}><StoreOrdersQueue /></ProtectedRoute>
+            <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin']}><AdaptiveLayout><StoreOrdersQueue /></AdaptiveLayout></ProtectedRoute>
           } />
           <Route path="/store/retailers" element={
-            <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin', 'salesperson', 'bill_operator']}><RetailersList /></ProtectedRoute>
+            <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin', 'salesperson', 'bill_operator']}><AdaptiveLayout><RetailersList /></AdaptiveLayout></ProtectedRoute>
           } />
           <Route path="/store/areas" element={
-            <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin']}><AreasList /></ProtectedRoute>
+            <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin']}><AdaptiveLayout><AreasList /></AdaptiveLayout></ProtectedRoute>
           } />
           <Route path="/store/products" element={
-            <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin', 'bill_operator']}><ProductsList /></ProtectedRoute>
+            <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin', 'bill_operator']}><AdaptiveLayout><ProductsList /></AdaptiveLayout></ProtectedRoute>
           } />
 
           {/* ── Sales Officer ── */}
           <Route path="/team" element={
-            <ProtectedRoute roles={['sales_officer', 'admin', 'super_admin']}><TeamList /></ProtectedRoute>
+            <ProtectedRoute roles={['sales_officer', 'admin', 'super_admin']}><AdaptiveLayout><TeamList /></AdaptiveLayout></ProtectedRoute>
           } />
 
           {/* ── Admin ── */}
           <Route path="/admin/users" element={
-            <ProtectedRoute roles={['admin', 'super_admin']}><UserManagement /></ProtectedRoute>
+            <ProtectedRoute roles={['admin', 'super_admin']}><AdaptiveLayout><UserManagement /></AdaptiveLayout></ProtectedRoute>
           } />
           <Route path="/admin/tracking" element={
-            <ProtectedRoute roles={['admin', 'super_admin', 'sales_officer']}><SalespersonTracking /></ProtectedRoute>
+            <ProtectedRoute roles={['admin', 'super_admin', 'sales_officer']}><AdaptiveLayout><SalespersonTracking /></AdaptiveLayout></ProtectedRoute>
           } />
           <Route path="/admin/attendance" element={
-            <ProtectedRoute roles={['admin', 'super_admin', 'sales_officer']}><AttendanceReport /></ProtectedRoute>
+            <ProtectedRoute roles={['admin', 'super_admin', 'sales_officer']}><AdaptiveLayout><AttendanceReport /></AdaptiveLayout></ProtectedRoute>
           } />
           <Route path="/reports" element={
-            <ProtectedRoute roles={['admin', 'super_admin', 'sales_officer', 'salesperson']}><Reports /></ProtectedRoute>
+            <ProtectedRoute roles={['admin', 'super_admin', 'sales_officer', 'salesperson']}><AdaptiveLayout><Reports /></AdaptiveLayout></ProtectedRoute>
           } />
           <Route path="/chat" element={
-            <ProtectedRoute roles={['admin', 'super_admin', 'sales_officer', 'salesperson', 'bill_operator', 'delivery_incharge', 'store_incharge']}><Chat /></ProtectedRoute>
+            <ProtectedRoute roles={['admin', 'super_admin', 'sales_officer', 'salesperson', 'bill_operator', 'delivery_incharge', 'store_incharge']}><AdaptiveLayout><Chat /></AdaptiveLayout></ProtectedRoute>
           } />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </BrowserRouter>
+      </HashRouter>
     </AuthProvider>
   );
 }

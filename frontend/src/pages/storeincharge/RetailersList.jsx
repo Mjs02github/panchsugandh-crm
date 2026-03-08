@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api';
-import BottomNav from '../../components/BottomNav';
 import indiaStates from '../../utils/indiaStates.json';
 
 const CAN_EDIT = ['store_incharge', 'admin', 'super_admin'];
@@ -284,7 +283,6 @@ export default function RetailersList() {
                 ))}
             </div>
 
-            <BottomNav />
-        </div>
+                    </div>
     );
 }
