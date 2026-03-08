@@ -91,8 +91,78 @@ pool.getConnection(async (err, conn) => {
             );
             console.log(`✅ sales_orders status enum verified (READY_TO_SHIP included)`);
         } catch (enumErr) {
-            // This is safe to ignore if enum is already correct
             console.warn('⚠️ Enum migration skipped (may already be up to date):', enumErr.message);
+        }
+
+        // Auto-migrate: Store Management & Production System
+        try {
+            // 1. Raw Materials
+            await conn.promise().query(`
+                CREATE TABLE IF NOT EXISTS raw_materials (
+                    id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    name         VARCHAR(150) NOT NULL,
+                    sku          VARCHAR(50) UNIQUE NULL,
+                    unit         VARCHAR(20) NOT NULL DEFAULT 'PCS',
+                    qty_on_hand  DECIMAL(12,3) NOT NULL DEFAULT 0.000,
+                    min_stock    DECIMAL(12,3) DEFAULT 0.000,
+                    created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at   DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                )
+            `);
+
+            // 2. Product BOM
+            await conn.promise().query(`
+                CREATE TABLE IF NOT EXISTS product_bom (
+                    id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    product_id        INT UNSIGNED NOT NULL,
+                    material_id       INT UNSIGNED NOT NULL,
+                    quantity_required DECIMAL(12,4) NOT NULL,
+                    created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT fk_bom_product  FOREIGN KEY (product_id)  REFERENCES products(id) ON DELETE CASCADE,
+                    CONSTRAINT fk_bom_material FOREIGN KEY (material_id) REFERENCES raw_materials(id) ON DELETE CASCADE,
+                    UNIQUE KEY uq_product_material (product_id, material_id)
+                )
+            `);
+
+            // 3. Production Logs
+            await conn.promise().query(`
+                CREATE TABLE IF NOT EXISTS production_logs (
+                    id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    product_id        INT UNSIGNED NOT NULL,
+                    batch_number      VARCHAR(50) NULL,
+                    packing_date      DATE NOT NULL,
+                    quantity_produced INT NOT NULL,
+                    notes             TEXT NULL,
+                    created_by        INT UNSIGNED NULL,
+                    created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT fk_prod_product FOREIGN KEY (product_id) REFERENCES products(id),
+                    CONSTRAINT fk_prod_user    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+                )
+            `);
+
+            // 4. Sample Requests
+            await conn.promise().query(`
+                CREATE TABLE IF NOT EXISTS sample_requests (
+                    id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    product_id        INT UNSIGNED NOT NULL,
+                    quantity          INT NOT NULL,
+                    request_date      DATE NOT NULL,
+                    reason            VARCHAR(255) NULL,
+                    status            ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING',
+                    requested_by      INT UNSIGNED NOT NULL,
+                    approved_by       INT UNSIGNED NULL,
+                    approved_at       DATETIME NULL,
+                    notes             TEXT NULL,
+                    created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT fk_sample_product FOREIGN KEY (product_id) REFERENCES products(id),
+                    CONSTRAINT fk_sample_requester FOREIGN KEY (requested_by) REFERENCES users(id),
+                    CONSTRAINT fk_sample_approver FOREIGN KEY (approved_by) REFERENCES users(id) ON DELETE SET NULL
+                )
+            `);
+
+            console.log(`✅ Store Management tables verified (BOM & Samples ready)`);
+        } catch (prodErr) {
+            console.error('❌ Failed to run Store Management migration:', prodErr.message);
         }
 
         conn.release();
