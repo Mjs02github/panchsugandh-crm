@@ -60,7 +60,28 @@ pool.getConnection(async (err, conn) => {
             `);
             console.log(`✅ stock_inwards table verified`);
         } catch (tableErr) {
-            console.error('❌ Failed to run table migrations:', tableErr.message);
+            console.error('❌ Failed to run stock_inwards migration:', tableErr.message);
+        }
+
+        // Auto-migrate: GPS salesperson location tracking
+        try {
+            await conn.promise().query(`
+                CREATE TABLE IF NOT EXISTS salesperson_locations (
+                    id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    salesperson_id  INT UNSIGNED NOT NULL,
+                    latitude        DECIMAL(10, 7) NOT NULL,
+                    longitude       DECIMAL(10, 7) NOT NULL,
+                    \`timestamp\`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT fk_loc_salesperson FOREIGN KEY (salesperson_id)
+                        REFERENCES users(id) ON DELETE CASCADE
+                )
+            `);
+            // Indexes — ignore error if they already exist
+            await conn.promise().query(`CREATE INDEX IF NOT EXISTS idx_loc_salesperson ON salesperson_locations(salesperson_id)`).catch(() => { });
+            await conn.promise().query(`CREATE INDEX IF NOT EXISTS idx_loc_sp_date ON salesperson_locations(salesperson_id, \`timestamp\`)`).catch(() => { });
+            console.log(`✅ salesperson_locations table verified (GPS tracking ready)`);
+        } catch (tableErr) {
+            console.error('❌ Failed to run GPS locations migration:', tableErr.message);
         }
 
         // Auto-migrate: ensure READY_TO_SHIP is in the status enum
