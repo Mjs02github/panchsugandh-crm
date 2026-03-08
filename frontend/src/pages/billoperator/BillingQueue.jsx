@@ -63,6 +63,9 @@ export default function BillingQueue() {
     const [histStatus, setHistStatus] = useState('BILLED');
     const [printOrder, setPrintOrder] = useState(null);
     const [printItems, setPrintItems] = useState([]);
+    const [itemBatches, setItemBatches] = useState({}); // {itemId: batch_number}
+    const [itemMRPs, setItemMRPs] = useState({}); // {itemId: mrp}
+    const [availableBatches, setAvailableBatches] = useState({}); // {productId: [batches]}
 
     // ── Load Queue ─────────────────────────────────────────
     const loadQueue = () => {
@@ -90,16 +93,35 @@ export default function BillingQueue() {
     const handleSelectOrder = async (order) => {
         setSelected(order.id); setSuccess(''); setError('');
         setBillNum(''); setOrderItems([]); setItemDiscounts({});
+        setItemBatches({}); setItemMRPs({}); setAvailableBatches({});
         setShowCancelFor(null); setCancelReason('');
         setLoadingDetails(true);
         try {
             const r = await api.get(`/orders/${order.id}`);
             const items = r.data.items || [];
             setOrderItems(items);
-            // Pre-fill discounts from existing order data
+
+            // Pre-fill discounts and fetch batches for each product
             const discMap = {};
-            items.forEach(it => { discMap[it.id] = parseFloat(it.discount_pct || 0); });
+            const mrpMap = {};
+            for (const it of items) {
+                discMap[it.id] = parseFloat(it.discount_pct || 0);
+                mrpMap[it.id] = parseFloat(it.mrp || 0);
+
+                // Fetch batches for this product if not already fetched
+                if (!availableBatches[it.product_id]) {
+                    const bRes = await api.get(`/store/inventory/product/${it.product_id}/batches`);
+                    setAvailableBatches(prev => ({ ...prev, [it.product_id]: bRes.data }));
+
+                    // Default to first batch if available
+                    if (bRes.data.length > 0) {
+                        setItemBatches(prev => ({ ...prev, [it.id]: bRes.data[0].batch_number }));
+                        setItemMRPs(prev => ({ ...prev, [it.id]: bRes.data[0].mrp }));
+                    }
+                }
+            }
             setItemDiscounts(discMap);
+            setItemMRPs(mrpMap);
         }
         catch { setError('Failed to load order items.'); }
         finally { setLoadingDetails(false); }
@@ -116,7 +138,8 @@ export default function BillingQueue() {
 
     const computedTotal = orderItems.reduce((s, it) => {
         const disc = itemDiscounts[it.id] ?? parseFloat(it.discount_pct || 0);
-        return s + calcLineAmt(it.mrp, it.gst_rate, disc, it.qty_billed ?? it.qty_ordered);
+        const mrp = itemMRPs[it.id] ?? parseFloat(it.mrp || 0);
+        return s + calcLineAmt(mrp, it.gst_rate, disc, it.qty_billed ?? it.qty_ordered);
     }, 0);
 
     const handleBill = async (orderId) => {
@@ -127,8 +150,11 @@ export default function BillingQueue() {
                 id: it.id,
                 qty_billed: it.qty_billed ?? it.qty_ordered,
                 discount_pct: itemDiscounts[it.id] ?? parseFloat(it.discount_pct || 0),
+                batch_number: itemBatches[it.id] || null,
+                mrp: itemMRPs[it.id] ?? parseFloat(it.mrp || 0),
                 line_amount: parseFloat(calcLineAmt(
-                    it.mrp, it.gst_rate,
+                    itemMRPs[it.id] ?? it.mrp,
+                    it.gst_rate,
                     itemDiscounts[it.id] ?? it.discount_pct,
                     it.qty_billed ?? it.qty_ordered
                 ).toFixed(2)),
@@ -293,31 +319,69 @@ export default function BillingQueue() {
                                             {orderItems.map((item) => {
                                                 const disc = itemDiscounts[item.id] ?? parseFloat(item.discount_pct || 0);
                                                 const qty = item.qty_billed ?? item.qty_ordered;
-                                                const baseRate = calcBaseRate(item.mrp, item.gst_rate);
-                                                const billedRate = calcBilledRate(item.mrp, item.gst_rate, disc);
-                                                const lineAmt = calcLineAmt(item.mrp, item.gst_rate, disc, qty);
+                                                const mrp = itemMRPs[item.id] ?? parseFloat(item.mrp || 0);
+                                                const baseRate = calcBaseRate(mrp, item.gst_rate);
+                                                const billedRate = calcBilledRate(mrp, item.gst_rate, disc);
+                                                const lineAmt = calcLineAmt(mrp, item.gst_rate, disc, qty);
+                                                const batches = availableBatches[item.product_id] || [];
+
                                                 return (
-                                                    <div key={item.id} className="border border-gray-200 rounded-lg p-2 bg-white">
-                                                        <div className="flex justify-between items-start mb-1.5">
+                                                    <div key={item.id} className="border border-gray-200 rounded-lg p-3 bg-white space-y-3">
+                                                        <div className="flex justify-between items-start">
                                                             <span className="text-xs font-semibold text-gray-800 flex-1 pr-2">{qty}× {item.product_name}</span>
-                                                            <span className="text-xs font-bold text-brand-700">₹{lineAmt.toFixed(2)}</span>
+                                                            <span className="text-sm font-bold text-brand-700">₹{lineAmt.toFixed(2)}</span>
                                                         </div>
-                                                        <div className="flex items-center gap-2 text-[10px] text-gray-500 mb-2">
-                                                            <span>MRP ₹{parseFloat(item.mrp || 0).toFixed(2)}</span>
-                                                            <span>•</span>
-                                                            <span>Base ₹{baseRate.toFixed(2)}</span>
-                                                            <span>•</span>
-                                                            <span className="text-brand-600 font-semibold">Billed ₹{billedRate.toFixed(2)}</span>
+
+                                                        <div className="grid grid-cols-2 gap-3">
+                                                            {/* Batch Selection */}
+                                                            <div>
+                                                                <label className="text-[10px] text-gray-400 block mb-1 uppercase font-bold">Select Batch</label>
+                                                                <select
+                                                                    className="w-full text-xs border border-gray-200 rounded-lg p-2 bg-gray-50 font-medium"
+                                                                    value={itemBatches[item.id] || ''}
+                                                                    onChange={e => {
+                                                                        const selectedBatch = batches.find(b => b.batch_number === e.target.value);
+                                                                        setItemBatches(prev => ({ ...prev, [item.id]: e.target.value }));
+                                                                        if (selectedBatch) {
+                                                                            setItemMRPs(prev => ({ ...prev, [item.id]: selectedBatch.mrp }));
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <option value="">-- No Batch --</option>
+                                                                    {batches.map(b => (
+                                                                        <option key={b.batch_number} value={b.batch_number}>
+                                                                            {b.batch_number} (Stk: {b.qty_on_hand})
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+
+                                                            {/* MRP Adjustment */}
+                                                            <div>
+                                                                <label className="text-[10px] text-gray-400 block mb-1 uppercase font-bold">MRP (editable)</label>
+                                                                <input
+                                                                    type="number" step="0.01"
+                                                                    className="w-full text-xs border border-gray-200 rounded-lg p-2 bg-gray-50 font-bold text-brand-600"
+                                                                    value={mrp}
+                                                                    onChange={e => setItemMRPs(prev => ({ ...prev, [item.id]: parseFloat(e.target.value || 0) }))}
+                                                                />
+                                                            </div>
                                                         </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <label className="text-[10px] text-gray-500 shrink-0">Disc %</label>
+
+                                                        <div className="flex items-center gap-2 text-[10px] text-gray-500">
+                                                            <span className="bg-gray-100 px-1.5 py-0.5 rounded">Base: ₹{baseRate.toFixed(2)}</span>
+                                                            <span className="bg-brand-50 text-brand-600 px-1.5 py-0.5 rounded font-bold">Billed: ₹{billedRate.toFixed(2)}</span>
+                                                        </div>
+
+                                                        <div className="flex items-center gap-2 pt-1">
+                                                            <label className="text-[10px] text-gray-500 shrink-0 font-bold uppercase">Disc %</label>
                                                             <input
                                                                 type="number" min="0" max="100" step="0.5"
-                                                                className="input py-1 text-sm w-24"
+                                                                className="flex-1 text-xs border border-gray-200 rounded-lg p-1.5 bg-white font-medium"
                                                                 value={disc}
                                                                 onChange={e => setItemDiscounts(d => ({ ...d, [item.id]: parseFloat(e.target.value || 0) }))}
                                                             />
-                                                            <span className="text-[10px] text-gray-400">% off base rate</span>
+                                                            <span className="text-[10px] text-gray-400">on base rate</span>
                                                         </div>
                                                     </div>
                                                 );
@@ -437,7 +501,7 @@ export default function BillingQueue() {
                 </div>
             )}
 
-            
+
             {/* Hidden invoice for print */}
             {lastBilledOrder && <InvoiceTemplate order={lastBilledOrder} items={orderItems} totalPaid={0} />}
             {printOrder && <InvoiceTemplate order={printOrder} items={printItems} totalPaid={0} />}

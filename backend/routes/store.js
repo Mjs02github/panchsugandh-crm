@@ -152,20 +152,24 @@ router.post('/production', auth, allowRoles(ROLES.ADMIN, ROLES.STORE_INCHARGE), 
             await conn.query('UPDATE raw_materials SET qty_on_hand = qty_on_hand - ? WHERE id = ?', [totalNeeded, item.material_id]);
         }
 
-        // 3. Increase Finished Stock
+        // 3. Increase/Update Finished Stock (Per Batch)
         await conn.query(
-            'UPDATE inventory SET qty_on_hand = qty_on_hand + ? WHERE product_id = ?',
-            [quantity_produced, product_id]
+            `INSERT INTO inventory (product_id, batch_number, mrp, qty_on_hand) 
+             VALUES (?, ?, ?, ?) 
+             ON DUPLICATE KEY UPDATE 
+                qty_on_hand = qty_on_hand + VALUES(qty_on_hand),
+                mrp = VALUES(mrp)`,
+            [product_id, batch_number || 'DEFAULT', mrp || 0, quantity_produced]
         );
 
         // 4. Log Production
         await conn.query(
-            'INSERT INTO production_logs (product_id, batch_number, packing_date, quantity_produced, notes, created_by) VALUES (?, ?, ?, ?, ?, ?)',
-            [product_id, batch_number || null, packing_date || new Date(), quantity_produced, notes || null, req.user.id]
+            'INSERT INTO production_logs (product_id, batch_number, mrp, packing_date, quantity_produced, notes, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [product_id, batch_number || null, mrp || 0, packing_date || new Date(), quantity_produced, notes || null, req.user.id]
         );
 
         await conn.commit();
-        res.json({ message: `Production logged. ${quantity_produced} units added to stock. Raw materials deducted.` });
+        res.json({ message: `Production logged. ${quantity_produced} units added to batch ${batch_number || 'DEFAULT'}. Raw materials deducted.` });
     } catch (err) {
         await conn.rollback();
         res.status(400).json({ error: err.message || 'Server error during production entry.' });
@@ -198,15 +202,16 @@ router.get('/samples', auth, async (req, res) => {
 // POST /api/store/samples
 router.post('/samples', auth, allowRoles(ROLES.BILL_OPERATOR, ROLES.ADMIN, ROLES.SUPER_ADMIN), async (req, res) => {
     try {
-        const { product_id, quantity, reason, request_date, notes } = req.body;
+        const { product_id, quantity, reason, request_date, notes, batch_number, mrp, issued_to } = req.body;
         if (!product_id || !quantity || quantity <= 0) return res.status(400).json({ error: 'Invalid data.' });
 
         await db.query(
-            'INSERT INTO sample_requests (product_id, quantity, reason, request_date, requested_by, notes) VALUES (?, ?, ?, ?, ?, ?)',
-            [product_id, quantity, reason || null, request_date || new Date(), req.user.id, notes || null]
+            'INSERT INTO sample_requests (product_id, batch_number, mrp, quantity, reason, issued_to, request_date, requested_by, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [product_id, batch_number || null, mrp || 0, quantity, reason || null, issued_to || null, request_date || new Date(), req.user.id, notes || null]
         );
         res.status(201).json({ message: 'Sample request submitted for Admin approval.' });
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: 'Server error.' });
     }
 });
@@ -222,16 +227,23 @@ router.patch('/samples/:id/approve', auth, allowRoles(ROLES.ADMIN, ROLES.SUPER_A
         if (!reqs.length) throw new Error('Request not found.');
         if (reqs[0].status !== 'PENDING') throw new Error('Request is already processed.');
 
-        const { product_id, quantity } = reqs[0];
+        const { product_id, batch_number, quantity } = reqs[0];
 
-        // 2. Check stock
-        const [inv] = await conn.query('SELECT qty_on_hand FROM inventory WHERE product_id = ?', [product_id]);
+        // 2. Check stock for specific batch
+        const [inv] = await conn.query(
+            'SELECT qty_on_hand FROM inventory WHERE product_id = ? AND batch_number = ?',
+            [product_id, batch_number || 'DEFAULT']
+        );
+
         if (!inv.length || inv[0].qty_on_hand < quantity) {
-            throw new Error('Insufficient stock in inventory to issue this sample.');
+            throw new Error(`Insufficient stock in batch ${batch_number || 'DEFAULT'} to issue this sample.`);
         }
 
-        // 3. Deduct stock
-        await conn.query('UPDATE inventory SET qty_on_hand = qty_on_hand - ? WHERE product_id = ?', [quantity, product_id]);
+        // 3. Deduct stock from specific batch
+        await conn.query(
+            'UPDATE inventory SET qty_on_hand = qty_on_hand - ? WHERE product_id = ? AND batch_number = ?',
+            [quantity, product_id, batch_number || 'DEFAULT']
+        );
 
         // 4. Update request
         await conn.query(
@@ -240,7 +252,7 @@ router.patch('/samples/:id/approve', auth, allowRoles(ROLES.ADMIN, ROLES.SUPER_A
         );
 
         await conn.commit();
-        res.json({ message: 'Sample request approved and stock deducted.' });
+        res.json({ message: 'Sample request approved and stock deducted from specified batch.' });
     } catch (err) {
         await conn.rollback();
         res.status(400).json({ error: err.message || 'Server error.' });
@@ -281,6 +293,19 @@ router.get('/capacity', auth, async (req, res) => {
         res.json(rows);
     } catch (err) {
         res.status(500).json({ error: 'Server error calculating capacity.' });
+    }
+});
+
+// GET /api/store/inventory/product/:productId/batches
+router.get('/inventory/product/:productId/batches', auth, async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            'SELECT batch_number, mrp, qty_on_hand, qty_reserved FROM inventory WHERE product_id = ? AND qty_on_hand > 0',
+            [req.params.productId]
+        );
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Server error fetching batches.' });
     }
 });
 

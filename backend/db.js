@@ -124,12 +124,28 @@ pool.getConnection(async (err, conn) => {
                 )
             `);
 
-            // 3. Production Logs
+            // 3. Inventory (Added batch_number and mrp)
+            await conn.promise().query(`
+                CREATE TABLE IF NOT EXISTS inventory (
+                    id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    product_id   INT UNSIGNED NOT NULL,
+                    batch_number VARCHAR(50) NULL,
+                    mrp          DECIMAL(10,2) DEFAULT 0.00,
+                    qty_on_hand  INT NOT NULL DEFAULT 0,
+                    qty_reserved INT NOT NULL DEFAULT 0,
+                    updated_at   DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    CONSTRAINT fk_inventory_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+                    UNIQUE KEY uq_prod_batch (product_id, batch_number)
+                )
+            `);
+
+            // 4. Production Logs (Added mrp)
             await conn.promise().query(`
                 CREATE TABLE IF NOT EXISTS production_logs (
                     id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                     product_id        INT UNSIGNED NOT NULL,
                     batch_number      VARCHAR(50) NULL,
+                    mrp               DECIMAL(10,2) DEFAULT 0.00,
                     packing_date      DATE NOT NULL,
                     quantity_produced INT NOT NULL,
                     notes             TEXT NULL,
@@ -157,15 +173,18 @@ pool.getConnection(async (err, conn) => {
                 )
             `);
 
-            // 5. Sample Requests
+            // 6. Sample Requests
 
             await conn.promise().query(`
                 CREATE TABLE IF NOT EXISTS sample_requests (
                     id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                     product_id        INT UNSIGNED NOT NULL,
+                    batch_number      VARCHAR(50) NULL,
+                    mrp               DECIMAL(10,2) DEFAULT 0.00,
                     quantity          INT NOT NULL,
                     request_date      DATE NOT NULL,
                     reason            VARCHAR(255) NULL,
+                    issued_to         VARCHAR(255) NULL,
                     status            ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING',
                     requested_by      INT UNSIGNED NOT NULL,
                     approved_by       INT UNSIGNED NULL,

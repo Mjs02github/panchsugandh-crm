@@ -360,4 +360,78 @@ router.get('/attendance', auth, allowRoles(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES
     }
 });
 
+// ─────────────────────────────────────────────────────────
+// GET /api/reports/raw-material-mis
+// ─────────────────────────────────────────────────────────
+router.get('/raw-material-mis', auth, allowRoles(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.STORE_INCHARGE), async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            `SELECT 
+                rm.name AS 'Material Name',
+                rm.sku AS SKU,
+                rm.unit AS Unit,
+                rm.qty_on_hand AS 'Current Stock',
+                rm.min_stock AS 'Min Stock',
+                (SELECT SUM(quantity) FROM raw_material_logs WHERE material_id = rm.id AND received_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)) AS 'Received (30d)',
+                CASE WHEN rm.qty_on_hand <= rm.min_stock THEN 'LOW' ELSE 'OK' END AS Status
+            FROM raw_materials rm
+            ORDER BY rm.name ASC`
+        );
+
+        if (req.query.format === 'excel') {
+            const workbook = new ExcelJS.Workbook();
+            const sheet = workbook.addWorksheet('Raw Material MIS');
+            if (rows.length > 0) {
+                sheet.columns = Object.keys(rows[0]).map(key => ({ header: key, key, width: 22 }));
+                styleHeaderRow(sheet, sheet.getRow(1));
+                rows.forEach(row => { sheet.addRow(Object.values(row)).height = 18; });
+            }
+            return sendExcel(res, workbook, `Raw_Material_MIS_${new Date().toISOString().slice(0, 10)}.xlsx`);
+        }
+        res.json({ data: rows });
+    } catch (err) {
+        console.error('RM MIS report error:', err);
+        res.status(500).json({ error: 'Server error.' });
+    }
+});
+
+// ─────────────────────────────────────────────────────────
+// GET /api/reports/product-sales-batch-wise
+// ─────────────────────────────────────────────────────────
+router.get('/product-sales-batch-wise', auth, allowRoles(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.STORE_INCHARGE, ROLES.BILL_OPERATOR), async (req, res) => {
+    try {
+        const { from, to } = getDateRange(req.query);
+        const [rows] = await db.query(
+            `SELECT 
+                p.name AS Product,
+                oi.batch_number AS 'Batch No',
+                oi.mrp AS MRP,
+                SUM(COALESCE(oi.qty_billed, oi.qty_ordered)) AS 'Qty Sold',
+                ROUND(SUM(oi.line_amount), 2) AS 'Sales Amount'
+            FROM order_items oi
+            JOIN sales_orders so ON oi.order_id = so.id
+            JOIN products p ON oi.product_id = p.id
+            WHERE so.order_date BETWEEN ? AND ? AND so.status NOT IN ('CANCELLED')
+            GROUP BY p.id, oi.batch_number, oi.mrp
+            ORDER BY p.name ASC, oi.batch_number ASC`,
+            [from, to]
+        );
+
+        if (req.query.format === 'excel') {
+            const workbook = new ExcelJS.Workbook();
+            const sheet = workbook.addWorksheet('Batch-wise Sales');
+            if (rows.length > 0) {
+                sheet.columns = Object.keys(rows[0]).map(key => ({ header: key, key, width: 22 }));
+                styleHeaderRow(sheet, sheet.getRow(1));
+                rows.forEach(row => { sheet.addRow(Object.values(row)).height = 18; });
+            }
+            return sendExcel(res, workbook, `Batch_Sales_${from}_to_${to}.xlsx`);
+        }
+        res.json({ data: rows, from, to });
+    } catch (err) {
+        console.error('Batch sales report error:', err);
+        res.status(500).json({ error: 'Server error.' });
+    }
+});
+
 module.exports = router;

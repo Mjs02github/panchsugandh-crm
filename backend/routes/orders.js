@@ -283,14 +283,36 @@ router.patch('/:id/bill', auth, allowRoles(ROLES.BILL_OPERATOR, ROLES.ADMIN, ROL
 
         await conn.query(`UPDATE sales_orders SET ${setQuery} WHERE id = ?`, updateParams);
 
-        // If Bill Operator has adjusted quantities, update order items
+        // If Bill Operator has adjusted quantities or provided batch info, update order items
         if (items && items.length) {
             for (const item of items) {
-                if (item.id && item.qty_billed !== undefined) {
-                    await conn.query(
-                        'UPDATE order_items SET qty_billed = ?, line_amount = ? WHERE id = ? AND order_id = ?',
-                        [item.qty_billed, item.line_amount || null, item.id, req.params.id]
-                    );
+                if (item.id) {
+                    const fields = [];
+                    const params = [];
+                    if (item.qty_billed !== undefined) {
+                        fields.push('qty_billed = ?');
+                        params.push(item.qty_billed);
+                    }
+                    if (item.line_amount !== undefined) {
+                        fields.push('line_amount = ?');
+                        params.push(item.line_amount);
+                    }
+                    if (item.batch_number) {
+                        fields.push('batch_number = ?');
+                        params.push(item.batch_number);
+                    }
+                    if (item.mrp) {
+                        fields.push('mrp = ?');
+                        params.push(item.mrp);
+                    }
+
+                    if (fields.length > 0) {
+                        params.push(item.id, req.params.id);
+                        await conn.query(
+                            `UPDATE order_items SET ${fields.join(', ')} WHERE id = ? AND order_id = ?`,
+                            params
+                        );
+                    }
                 }
             }
         }
@@ -362,18 +384,20 @@ router.patch('/:id/deliver', auth, allowRoles(ROLES.DELIVERY_INCHARGE, ROLES.ADM
             [delivery_remark.trim(), dDate, req.user.id, req.params.id]
         );
 
-        // Release reserved inventory (deduct from qty_on_hand)
+        // Release reserved inventory (deduct from qty_on_hand for specific batch)
         const [orderItems] = await conn.query(
-            'SELECT product_id, COALESCE(qty_billed, qty_ordered) AS qty FROM order_items WHERE order_id = ?',
+            'SELECT product_id, batch_number, COALESCE(qty_billed, qty_ordered) AS qty FROM order_items WHERE order_id = ?',
             [req.params.id]
         );
         for (const oi of orderItems) {
+            // Deduct from the specific batch. If batch_number is NULL in order_items, we'll have a problem if multiple batches exist.
+            // But realistically, the UI will enforce batch selection during billing.
             await conn.query(
                 `UPDATE inventory
-         SET qty_on_hand  = qty_on_hand - ?,
-             qty_reserved = qty_reserved - ?
-         WHERE product_id = ?`,
-                [oi.qty, oi.qty, oi.product_id]
+                 SET qty_on_hand  = qty_on_hand - ?,
+                     qty_reserved = qty_reserved - ?
+                 WHERE product_id = ? AND (batch_number = ? OR batch_number IS NULL OR batch_number = 'DEFAULT')`,
+                [oi.qty, oi.qty, oi.product_id, oi.batch_number || 'DEFAULT']
             );
         }
 

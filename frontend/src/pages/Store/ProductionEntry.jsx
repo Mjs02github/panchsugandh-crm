@@ -9,6 +9,7 @@ export default function ProductionEntry() {
         product_id: '',
         quantity_produced: '',
         batch_number: '',
+        mrp: '',
         packing_date: new Date().toISOString().split('T')[0],
         notes: ''
     });
@@ -37,13 +38,15 @@ export default function ProductionEntry() {
         try {
             const { data } = await api.post('/store/production', {
                 ...formData,
-                quantity_produced: parseInt(formData.quantity_produced)
+                quantity_produced: parseInt(formData.quantity_produced),
+                mrp: parseFloat(formData.mrp) || 0
             });
             alert(data.message);
             setFormData({
                 product_id: '',
                 quantity_produced: '',
                 batch_number: '',
+                mrp: '',
                 packing_date: new Date().toISOString().split('T')[0],
                 notes: ''
             });
@@ -95,7 +98,7 @@ export default function ProductionEntry() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Batch Number</label>
                                     <input
@@ -103,6 +106,15 @@ export default function ProductionEntry() {
                                         onChange={e => setFormData({ ...formData, batch_number: e.target.value })}
                                         className="w-full border p-2.5 rounded-xl bg-gray-50 uppercase"
                                         placeholder="e.g. PS/2024/001"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">MRP (Per Unit)</label>
+                                    <input
+                                        type="number" step="0.01" required value={formData.mrp}
+                                        onChange={e => setFormData({ ...formData, mrp: e.target.value })}
+                                        className="w-full border p-2.5 rounded-xl bg-gray-50 text-brand-700 font-bold"
+                                        placeholder="0.00"
                                     />
                                 </div>
                                 <div>

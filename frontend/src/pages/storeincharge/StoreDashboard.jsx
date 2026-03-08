@@ -144,6 +144,43 @@ export default function StoreDashboard() {
                         </Link>
                     </div>
                 </div>
+
+                {/* MIS Reports Section */}
+                <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-4">
+                    <h2 className="text-lg font-bold flex items-center gap-2">
+                        <span className="p-2 bg-purple-50 rounded-lg">📊</span> MIS & Analytics Reports
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <a
+                            href={`${api.defaults.baseURL}/reports/raw-material-mis?download=true`}
+                            target="_blank" rel="noreferrer"
+                            className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-purple-50 transition-colors group"
+                        >
+                            <div className="flex items-center gap-3">
+                                <span className="text-2xl">📋</span>
+                                <div>
+                                    <p className="font-bold text-gray-900">Raw Material MIS</p>
+                                    <p className="text-xs text-gray-500">Current stock, usage & inward logs</p>
+                                </div>
+                            </div>
+                            <span className="text-xs font-bold text-purple-600 group-hover:translate-x-1 transition-transform">Download Excel ↓</span>
+                        </a>
+                        <a
+                            href={`${api.defaults.baseURL}/reports/product-sales-batch-wise?download=true`}
+                            target="_blank" rel="noreferrer"
+                            className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-purple-50 transition-colors group"
+                        >
+                            <div className="flex items-center gap-3">
+                                <span className="text-2xl">📈</span>
+                                <div>
+                                    <p className="font-bold text-gray-900">Product Sales (Batch-wise)</p>
+                                    <p className="text-xs text-gray-500">Detailed sales report with batch info</p>
+                                </div>
+                            </div>
+                            <span className="text-xs font-bold text-purple-600 group-hover:translate-x-1 transition-transform">Download Excel ↓</span>
+                        </a>
+                    </div>
+                </div>
             </main>
         </div>
     );

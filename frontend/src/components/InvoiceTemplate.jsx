@@ -57,6 +57,8 @@ const fmtDate = (d) => d ? new Date(d.split('T')[0]).toLocaleDateString('en-IN',
 
 function InvoiceHeader({ order }) {
     const isBilled = ['BILLED', 'READY_TO_SHIP', 'DELIVERED'].includes(order.status);
+    const isSample = order.isSample;
+
     return (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2.5px solid #1a1a1a', paddingBottom: '8px', marginBottom: '10px' }}>
             <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
@@ -74,14 +76,14 @@ function InvoiceHeader({ order }) {
                 </div>
             </div>
             <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '26px', fontWeight: '300', color: '#ccc', letterSpacing: '3px', textTransform: 'uppercase' }}>
-                    {isBilled ? 'TAX INVOICE' : 'ESTIMATE'}
+                <div style={{ fontSize: '26px', fontWeight: '300', color: isSample ? '#e53e3e' : '#ccc', letterSpacing: '3px', textTransform: 'uppercase' }}>
+                    {isSample ? 'FREE SAMPLE ISSUE' : (isBilled ? 'TAX INVOICE' : 'ESTIMATE')}
                 </div>
                 <div style={{ marginTop: '6px', fontSize: '11px', lineHeight: '1.7' }}>
-                    <div><span style={{ color: '#888' }}>Invoice No:</span> <strong>{order.bill_number || `EST-${order.order_number}`}</strong></div>
-                    <div><span style={{ color: '#888' }}>Order No:</span> {order.order_number}</div>
-                    <div><span style={{ color: '#888' }}>Date:</span> {fmtDate(order.bill_date || order.order_date)}</div>
-                    {order.status && <div><span style={{ color: '#888' }}>Status:</span> <span style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>{order.status}</span></div>}
+                    <div><span style={{ color: '#888' }}>{isSample ? 'Sample No:' : 'Invoice No:'}</span> <strong>{order.bill_number || (isSample ? `SMP-${order.id}` : `EST-${order.order_number || order.id}`)}</strong></div>
+                    {!isSample && order.order_number && <div><span style={{ color: '#888' }}>Order No:</span> {order.order_number}</div>}
+                    <div><span style={{ color: '#888' }}>Date:</span> {fmtDate(order.bill_date || order.order_date || order.created_at)}</div>
+                    {order.status && !isSample && <div><span style={{ color: '#888' }}>Status:</span> <span style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>{order.status}</span></div>}
                 </div>
             </div>
         </div>
@@ -89,35 +91,52 @@ function InvoiceHeader({ order }) {
 }
 
 function PartySection({ order }) {
+    const isSample = order.isSample;
     return (
         <div style={{ display: 'flex', gap: '20px', marginBottom: '12px' }}>
-            {/* Billed To */}
+            {/* Billed To / Issued To */}
             <div style={{ flex: 1, padding: '10px 12px', background: '#f8f8f8', borderRadius: '6px', borderLeft: '4px solid #1a1a1a' }}>
-                <div style={{ fontSize: '9px', fontWeight: 'bold', color: '#888', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>Billed To</div>
-                <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#1a1a1a' }}>{order.retailer_name}</div>
-                {order.retailer_address && (
+                <div style={{ fontSize: '9px', fontWeight: 'bold', color: '#888', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                    {isSample ? 'Issued To' : 'Billed To'}
+                </div>
+                <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#1a1a1a' }}>
+                    {isSample ? order.issued_to : order.retailer_name}
+                </div>
+                {!isSample && order.retailer_address && (
                     <div style={{ fontSize: '11px', color: '#555', marginTop: '3px', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
                         {order.retailer_address}
                     </div>
                 )}
-                {order.area_name && <div style={{ fontSize: '11px', color: '#555', marginTop: '2px' }}>Area: {order.area_name}</div>}
-                {order.retailer_phone && <div style={{ fontSize: '11px', color: '#555', marginTop: '4px' }}>📞 {order.retailer_phone}</div>}
-                {order.gst_number && <div style={{ fontSize: '11px', color: '#555', marginTop: '3px' }}>GSTIN: <strong>{order.gst_number}</strong></div>}
+                {!isSample && order.area_name && <div style={{ fontSize: '11px', color: '#555', marginTop: '2px' }}>Area: {order.area_name}</div>}
+                {!isSample && order.retailer_phone && <div style={{ fontSize: '11px', color: '#555', marginTop: '4px' }}>📞 {order.retailer_phone}</div>}
+                {!isSample && order.gst_number && <div style={{ fontSize: '11px', color: '#555', marginTop: '3px' }}>GSTIN: <strong>{order.gst_number}</strong></div>}
+                {isSample && order.request_reason && <div style={{ fontSize: '11px', color: '#555', marginTop: '4px' }}>Reason: {order.request_reason}</div>}
             </div>
-            {/* Order Meta */}
+            {/* Sales Info / Request Info */}
             <div style={{ width: '165px', padding: '10px 12px', background: '#f8f8f8', borderRadius: '6px' }}>
-                <div style={{ fontSize: '9px', fontWeight: 'bold', color: '#888', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>Sales Info</div>
-                {order.salesperson_name && <div style={{ fontSize: '11px', color: '#555' }}>Salesman: <strong>{order.salesperson_name}</strong></div>}
-                {order.order_date && <div style={{ fontSize: '11px', color: '#555', marginTop: '2px' }}>Date: {fmtDate(order.order_date)}</div>}
-                {order.billed_by_name && <div style={{ fontSize: '11px', color: '#555', marginTop: '2px' }}>Billed By: {order.billed_by_name}</div>}
+                <div style={{ fontSize: '9px', fontWeight: 'bold', color: '#888', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                    {isSample ? 'Request Info' : 'Sales Info'}
+                </div>
+                {isSample ? (
+                    <>
+                        <div style={{ fontSize: '11px', color: '#555' }}>Requested By: <strong>{order.requested_by_name}</strong></div>
+                        <div style={{ fontSize: '11px', color: '#555', marginTop: '2px' }}>Approved By: {order.approved_by_name || 'Admin'}</div>
+                    </>
+                ) : (
+                    <>
+                        {order.salesperson_name && <div style={{ fontSize: '11px', color: '#555' }}>Salesman: <strong>{order.salesperson_name}</strong></div>}
+                        {order.order_date && <div style={{ fontSize: '11px', color: '#555', marginTop: '2px' }}>Date: {fmtDate(order.order_date)}</div>}
+                        {order.billed_by_name && <div style={{ fontSize: '11px', color: '#555', marginTop: '2px' }}>Billed By: {order.billed_by_name}</div>}
+                    </>
+                )}
             </div>
         </div>
     );
 }
 
-function ItemsTable({ items }) {
+function ItemsTable({ items, isSample }) {
     const visibleItems = (items || []).filter(item => {
-        const qty = item.qty_billed != null ? item.qty_billed : item.qty_ordered;
+        const qty = item.qty_billed != null ? item.qty_billed : (item.quantity || item.qty_ordered);
         return qty > 0;
     });
 
@@ -128,21 +147,22 @@ function ItemsTable({ items }) {
         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px' }}>
             <thead>
                 <tr>
-                    <th style={{ ...thStyle, textAlign: 'center', width: '36px' }}>#</th>
+                    <th style={{ ...thStyle, textAlign: 'center', width: '30px' }}>#</th>
                     <th style={{ ...thStyle }}>Product Name</th>
-                    {INVOICE_CONFIG.showHSN && <th style={{ ...thStyle, textAlign: 'center', width: '70px' }}>HSN</th>}
-                    <th style={{ ...thStyle, textAlign: 'center', width: '50px' }}>Unit</th>
-                    <th style={{ ...thStyle, textAlign: 'right', width: '60px' }}>Qty</th>
-                    {INVOICE_CONFIG.showMRP && <th style={{ ...thStyle, textAlign: 'right', width: '80px' }}>MRP (₹)</th>}
-                    <th style={{ ...thStyle, textAlign: 'right', width: '60px' }}>Disc%</th>
-                    <th style={{ ...thStyle, textAlign: 'right', width: '55px' }}>GST%</th>
-                    <th style={{ ...thStyle, textAlign: 'right', width: '80px' }}>Rate (₹)</th>
-                    <th style={{ ...thStyle, textAlign: 'right', width: '90px' }}>Amount (₹)</th>
+                    {!isSample && INVOICE_CONFIG.showHSN && <th style={{ ...thStyle, textAlign: 'center', width: '60px' }}>HSN</th>}
+                    <th style={{ ...thStyle, textAlign: 'center', width: '70px' }}>Batch No.</th>
+                    <th style={{ ...thStyle, textAlign: 'center', width: '40px' }}>Unit</th>
+                    <th style={{ ...thStyle, textAlign: 'right', width: '50px' }}>Qty</th>
+                    {(INVOICE_CONFIG.showMRP || isSample) && <th style={{ ...thStyle, textAlign: 'right', width: '70px' }}>MRP(₹)</th>}
+                    {!isSample && <th style={{ ...thStyle, textAlign: 'right', width: '50px' }}>Disc%</th>}
+                    {!isSample && <th style={{ ...thStyle, textAlign: 'right', width: '45px' }}>GST%</th>}
+                    <th style={{ ...thStyle, textAlign: 'right', width: '70px' }}>Rate(₹)</th>
+                    <th style={{ ...thStyle, textAlign: 'right', width: '80px' }}>Amount(₹)</th>
                 </tr>
             </thead>
             <tbody>
                 {visibleItems.map((item, idx) => {
-                    const qty = item.qty_billed != null ? item.qty_billed : item.qty_ordered;
+                    const qty = item.qty_billed != null ? item.qty_billed : (item.quantity || item.qty_ordered);
                     const rowBg = idx % 2 === 0 ? '#fff' : '#fafafa';
                     return (
                         <tr key={item.id || idx} style={{ background: rowBg }}>
@@ -151,22 +171,27 @@ function ItemsTable({ items }) {
                                 <div style={{ fontWeight: '600', color: '#1a1a1a' }}>{item.product_name}</div>
                                 {item.sku && <div style={{ fontSize: '10px', color: '#aaa' }}>SKU: {item.sku}</div>}
                             </td>
-                            {INVOICE_CONFIG.showHSN && <td style={{ ...tdStyle, textAlign: 'center', color: '#666', fontSize: '11px' }}>{item.hsn_code || '—'}</td>}
-                            <td style={{ ...tdStyle, textAlign: 'center', color: '#666', fontSize: '11px' }}>{item.unit || 'PCS'}</td>
+                            {!isSample && INVOICE_CONFIG.showHSN && <td style={{ ...tdStyle, textAlign: 'center', color: '#666', fontSize: '10px' }}>{item.hsn_code || '—'}</td>}
+                            <td style={{ ...tdStyle, textAlign: 'center', color: '#1a1a1a', fontSize: '10px', fontWeight: 'bold' }}>{item.batch_number || '—'}</td>
+                            <td style={{ ...tdStyle, textAlign: 'center', color: '#666', fontSize: '10px' }}>{item.unit || 'PCS'}</td>
                             <td style={{ ...tdStyle, textAlign: 'right', fontWeight: '600' }}>{qty}</td>
-                            {INVOICE_CONFIG.showMRP && (
+                            {(INVOICE_CONFIG.showMRP || isSample) && (
                                 <td style={{ ...tdStyle, textAlign: 'right', color: '#888' }}>
                                     {item.mrp ? `₹${fmt(item.mrp)}` : '—'}
                                 </td>
                             )}
-                            <td style={{ ...tdStyle, textAlign: 'right', color: '#e53e3e', fontSize: '11px' }}>
-                                {item.discount_pct > 0 ? `${parseFloat(item.discount_pct).toFixed(1)}%` : '—'}
-                            </td>
-                            <td style={{ ...tdStyle, textAlign: 'right', color: '#666', fontSize: '11px' }}>
-                                {item.gst_rate > 0 ? `${item.gst_rate}%` : '0%'}
-                            </td>
-                            <td style={{ ...tdStyle, textAlign: 'right' }}>₹{fmt(item.unit_price)}</td>
-                            <td style={{ ...tdStyle, textAlign: 'right', fontWeight: '600' }}>₹{fmt(item.line_amount)}</td>
+                            {!isSample && (
+                                <td style={{ ...tdStyle, textAlign: 'right', color: '#e53e3e', fontSize: '10px' }}>
+                                    {item.discount_pct > 0 ? `${parseFloat(item.discount_pct).toFixed(1)}%` : '—'}
+                                </td>
+                            )}
+                            {!isSample && (
+                                <td style={{ ...tdStyle, textAlign: 'right', color: '#666', fontSize: '10px' }}>
+                                    {item.gst_rate > 0 ? `${item.gst_rate}%` : '0%'}
+                                </td>
+                            )}
+                            <td style={{ ...tdStyle, textAlign: 'right' }}>₹{isSample ? '0.00' : fmt(item.unit_price)}</td>
+                            <td style={{ ...tdStyle, textAlign: 'right', fontWeight: '600' }}>₹{isSample ? '0.00' : fmt(item.line_amount)}</td>
                         </tr>
                     );
                 })}
@@ -179,10 +204,11 @@ function ItemsTable({ items }) {
 }
 
 function TotalsBlock({ order, totalPaid }) {
-    const subtotal = parseFloat(order.subtotal || order.total_amount || 0);
-    const discount = parseFloat(order.discount || 0);
-    const gstAmount = parseFloat(order.gst_amount || 0);
-    const grandTotal = parseFloat(order.total_amount || 0);
+    const isSample = order.isSample;
+    const subtotal = isSample ? 0 : parseFloat(order.subtotal || order.total_amount || 0);
+    const discount = isSample ? 0 : parseFloat(order.discount || 0);
+    const gstAmount = isSample ? 0 : parseFloat(order.gst_amount || 0);
+    const grandTotal = isSample ? 0 : parseFloat(order.total_amount || 0);
     const balanceDue = Math.max(0, grandTotal - (totalPaid || 0));
 
     const rowStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0', fontSize: '12px' };
@@ -192,19 +218,19 @@ function TotalsBlock({ order, totalPaid }) {
     return (
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
             <div style={{ width: '210px', padding: '8px 10px', border: '1px solid #ddd', borderRadius: '7px', background: '#fafafa' }}>
-                {INVOICE_CONFIG.showDiscount && discount > 0 && (
+                {!isSample && INVOICE_CONFIG.showDiscount && discount > 0 && (
                     <div style={rowStyle}>
                         <span style={labelStyle}>Subtotal:</span>
                         <span style={valStyle}>₹{fmt(subtotal)}</span>
                     </div>
                 )}
-                {INVOICE_CONFIG.showDiscount && discount > 0 && (
+                {!isSample && INVOICE_CONFIG.showDiscount && discount > 0 && (
                     <div style={rowStyle}>
                         <span style={labelStyle}>Discount:</span>
                         <span style={{ ...valStyle, color: '#e53e3e' }}>- ₹{fmt(discount)}</span>
                     </div>
                 )}
-                {INVOICE_CONFIG.showGST && gstAmount > 0 && (
+                {!isSample && INVOICE_CONFIG.showGST && gstAmount > 0 && (
                     <div style={rowStyle}>
                         <span style={labelStyle}>GST:</span>
                         <span style={valStyle}>₹{fmt(gstAmount)}</span>
@@ -215,7 +241,7 @@ function TotalsBlock({ order, totalPaid }) {
                     <span style={{ fontSize: '13px', fontWeight: 'bold' }}>TOTAL AMOUNT:</span>
                     <span style={{ fontSize: '16px', fontWeight: '900', color: '#1a1a1a' }}>₹{fmt(grandTotal)}</span>
                 </div>
-                {INVOICE_CONFIG.showBalanceDue && totalPaid > 0 && (
+                {!isSample && INVOICE_CONFIG.showBalanceDue && totalPaid > 0 && (
                     <>
                         <div style={{ ...rowStyle, marginTop: '8px', borderTop: '1px solid #ddd', paddingTop: '8px' }}>
                             <span style={labelStyle}>Amount Paid:</span>
@@ -291,7 +317,7 @@ export default function InvoiceTemplate({ order, items, totalPaid }) {
         <div className="invoice-print-container hidden print:block" style={{ width: '210mm', margin: '0 auto', background: '#fff', color: '#1a1a1a', fontFamily: 'Arial, sans-serif', padding: '10mm 12mm', boxSizing: 'border-box' }}>
             <InvoiceHeader order={order} />
             <PartySection order={order} />
-            <ItemsTable items={items} />
+            <ItemsTable items={items} isSample={order.isSample} />
             <TotalsBlock order={order} totalPaid={totalPaid} />
             <PaymentDetailsBlock />
             {INVOICE_CONFIG.showSignatures && <SignatureBlock />}

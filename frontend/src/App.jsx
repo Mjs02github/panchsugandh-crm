@@ -43,6 +43,7 @@ import RawMaterials from './pages/Store/RawMaterials';
 import BOMManager from './pages/Store/BOMManager';
 import ProductionEntry from './pages/Store/ProductionEntry';
 import SampleManagement from './pages/Store/SampleManagement';
+import PrintInvoice from './pages/PrintInvoice';
 
 
 function RoleRouter() {
@@ -176,7 +177,7 @@ export default function App() {
             <ProtectedRoute roles={['admin', 'super_admin', 'sales_officer', 'salesperson', 'bill_operator', 'delivery_incharge', 'store_incharge']}><AdaptiveLayout><Chat /></AdaptiveLayout></ProtectedRoute>
           } />
 
-          {/* Fallback */}
+          <Route path="/invoice/print" element={<PrintInvoice />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </HashRouter>
