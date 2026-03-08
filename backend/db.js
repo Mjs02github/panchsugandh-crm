@@ -140,7 +140,25 @@ pool.getConnection(async (err, conn) => {
                 )
             `);
 
-            // 4. Sample Requests
+            // 4. Raw Material Inward Logs
+            await conn.promise().query(`
+                CREATE TABLE IF NOT EXISTS raw_material_logs (
+                    id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    material_id       INT UNSIGNED NOT NULL,
+                    entry_number      VARCHAR(50) NULL,
+                    batch_number      VARCHAR(50) NULL,
+                    received_date     DATE NOT NULL,
+                    quantity          DECIMAL(12,3) NOT NULL,
+                    supplier_info     VARCHAR(255) NULL,
+                    created_by        INT UNSIGNED NULL,
+                    created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT fk_raw_mat_ref  FOREIGN KEY (material_id) REFERENCES raw_materials(id),
+                    CONSTRAINT fk_raw_mat_user FOREIGN KEY (created_by)  REFERENCES users(id) ON DELETE SET NULL
+                )
+            `);
+
+            // 5. Sample Requests
+
             await conn.promise().query(`
                 CREATE TABLE IF NOT EXISTS sample_requests (
                     id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
