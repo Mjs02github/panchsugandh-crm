@@ -123,7 +123,7 @@ export default function DesktopLayout({ children }) {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 overflow-y-auto w-full relative pt-12">
+            <main className="flex-1 overflow-y-auto w-full relative">
                 {/* Floating Logo in Top Right */}
                 <div className="absolute top-4 right-6 z-40 bg-white p-2 rounded-xl shadow-sm border border-gray-100">
                     <img
