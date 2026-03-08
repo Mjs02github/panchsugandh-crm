@@ -58,15 +58,15 @@ const fmtDate = (d) => d ? new Date(d.split('T')[0]).toLocaleDateString('en-IN',
 function InvoiceHeader({ order }) {
     const isBilled = ['BILLED', 'READY_TO_SHIP', 'DELIVERED'].includes(order.status);
     return (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '3px solid #1a1a1a', paddingBottom: '8px', marginBottom: '10px' }}>
-            <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #1a1a1a', paddingBottom: '5px', marginBottom: '6px' }}>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                 {COMPANY.logoUrl && (
-                    <img src={COMPANY.logoUrl} alt="Logo" style={{ maxHeight: '80px', maxWidth: '200px', objectFit: 'contain' }} onError={(e) => e.target.style.display = 'none'} />
+                    <img src={COMPANY.logoUrl} alt="Logo" style={{ maxHeight: '55px', maxWidth: '55px', objectFit: 'contain' }} onError={(e) => e.target.style.display = 'none'} />
                 )}
                 <div>
-                    <div style={{ fontSize: '28px', fontWeight: '900', letterSpacing: '2px', color: '#1a1a1a' }}>{COMPANY.name}</div>
-                    <div style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>{COMPANY.tagline}</div>
-                    <div style={{ fontSize: '11px', color: '#444', marginTop: '8px', lineHeight: '1.6' }}>
+                    <div style={{ fontSize: '20px', fontWeight: '900', letterSpacing: '1px', color: '#1a1a1a' }}>{COMPANY.name}</div>
+                    <div style={{ fontSize: '9px', color: '#666', marginTop: '1px' }}>{COMPANY.tagline}</div>
+                    <div style={{ fontSize: '9px', color: '#444', marginTop: '4px', lineHeight: '1.5' }}>
                         <div>{COMPANY.address}</div>
                         <div>📞 {COMPANY.phone}  ✉ {COMPANY.email}</div>
                         <div><strong>GSTIN:</strong> {COMPANY.gstin}</div>
@@ -74,10 +74,10 @@ function InvoiceHeader({ order }) {
                 </div>
             </div>
             <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '32px', fontWeight: '300', color: '#ccc', letterSpacing: '4px', textTransform: 'uppercase' }}>
+                <div style={{ fontSize: '22px', fontWeight: '300', color: '#ccc', letterSpacing: '2px', textTransform: 'uppercase' }}>
                     {isBilled ? 'TAX INVOICE' : 'ESTIMATE'}
                 </div>
-                <div style={{ marginTop: '10px', fontSize: '12px', lineHeight: '1.8' }}>
+                <div style={{ marginTop: '4px', fontSize: '10px', lineHeight: '1.6' }}>
                     <div><span style={{ color: '#888' }}>Invoice No:</span> <strong>{order.bill_number || `EST-${order.order_number}`}</strong></div>
                     <div><span style={{ color: '#888' }}>Order No:</span> {order.order_number}</div>
                     <div><span style={{ color: '#888' }}>Date:</span> {fmtDate(order.bill_date || order.order_date)}</div>
@@ -90,26 +90,26 @@ function InvoiceHeader({ order }) {
 
 function PartySection({ order }) {
     return (
-        <div style={{ display: 'flex', gap: '32px', marginBottom: '10px' }}>
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '6px' }}>
             {/* Billed To */}
-            <div style={{ flex: 1, padding: '12px', background: '#f8f8f8', borderRadius: '6px', borderLeft: '4px solid #1a1a1a' }}>
-                <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#888', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '1px' }}>Billed To</div>
-                <div style={{ fontWeight: 'bold', fontSize: '15px', color: '#1a1a1a' }}>{order.retailer_name}</div>
+            <div style={{ flex: 1, padding: '6px 10px', background: '#f8f8f8', borderRadius: '5px', borderLeft: '3px solid #1a1a1a' }}>
+                <div style={{ fontSize: '8px', fontWeight: 'bold', color: '#888', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '1px' }}>Billed To</div>
+                <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#1a1a1a' }}>{order.retailer_name}</div>
                 {order.retailer_address && (
-                    <div style={{ fontSize: '11px', color: '#555', marginTop: '4px', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
+                    <div style={{ fontSize: '9px', color: '#555', marginTop: '2px', whiteSpace: 'pre-wrap', lineHeight: '1.3' }}>
                         {order.retailer_address}
                     </div>
                 )}
-                {order.area_name && <div style={{ fontSize: '11px', color: '#555', marginTop: '2px' }}>Area: {order.area_name}</div>}
-                {order.retailer_phone && <div style={{ fontSize: '11px', color: '#555', marginTop: '6px' }}>📞 {order.retailer_phone}</div>}
-                {order.gst_number && <div style={{ fontSize: '11px', color: '#555', marginTop: '4px' }}>GSTIN: <strong>{order.gst_number}</strong></div>}
+                {order.area_name && <div style={{ fontSize: '9px', color: '#555', marginTop: '1px' }}>Area: {order.area_name}</div>}
+                {order.retailer_phone && <div style={{ fontSize: '9px', color: '#555', marginTop: '2px' }}>📞 {order.retailer_phone}</div>}
+                {order.gst_number && <div style={{ fontSize: '9px', color: '#555', marginTop: '2px' }}>GSTIN: <strong>{order.gst_number}</strong></div>}
             </div>
             {/* Order Meta */}
-            <div style={{ width: '180px', padding: '12px', background: '#f8f8f8', borderRadius: '6px' }}>
-                <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#888', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '1px' }}>Sales Info</div>
-                {order.salesperson_name && <div style={{ fontSize: '11px', color: '#555' }}>Salesman: <strong>{order.salesperson_name}</strong></div>}
-                {order.order_date && <div style={{ fontSize: '11px', color: '#555', marginTop: '2px' }}>Date: {fmtDate(order.order_date)}</div>}
-                {order.billed_by_name && <div style={{ fontSize: '11px', color: '#555', marginTop: '2px' }}>Billed By: {order.billed_by_name}</div>}
+            <div style={{ width: '150px', padding: '6px 10px', background: '#f8f8f8', borderRadius: '5px' }}>
+                <div style={{ fontSize: '8px', fontWeight: 'bold', color: '#888', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '1px' }}>Sales Info</div>
+                {order.salesperson_name && <div style={{ fontSize: '9px', color: '#555' }}>Salesman: <strong>{order.salesperson_name}</strong></div>}
+                {order.order_date && <div style={{ fontSize: '9px', color: '#555', marginTop: '1px' }}>Date: {fmtDate(order.order_date)}</div>}
+                {order.billed_by_name && <div style={{ fontSize: '9px', color: '#555', marginTop: '1px' }}>Billed By: {order.billed_by_name}</div>}
             </div>
         </div>
     );
@@ -185,13 +185,13 @@ function TotalsBlock({ order, totalPaid }) {
     const grandTotal = parseFloat(order.total_amount || 0);
     const balanceDue = Math.max(0, grandTotal - (totalPaid || 0));
 
-    const rowStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', fontSize: '13px' };
+    const rowStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '2px 0', fontSize: '11px' };
     const labelStyle = { color: '#555' };
     const valStyle = { fontWeight: '500' };
 
     return (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
-            <div style={{ width: '220px', padding: '10px', border: '1px solid #ddd', borderRadius: '8px', background: '#fafafa' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '6px' }}>
+            <div style={{ width: '200px', padding: '6px 8px', border: '1px solid #ddd', borderRadius: '6px', background: '#fafafa' }}>
                 {INVOICE_CONFIG.showDiscount && discount > 0 && (
                     <div style={rowStyle}>
                         <span style={labelStyle}>Subtotal:</span>
@@ -211,9 +211,9 @@ function TotalsBlock({ order, totalPaid }) {
                     </div>
                 )}
                 {/* Grand Total */}
-                <div style={{ borderTop: '2px solid #1a1a1a', marginTop: '8px', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '15px', fontWeight: 'bold' }}>TOTAL AMOUNT:</span>
-                    <span style={{ fontSize: '18px', fontWeight: '900', color: '#1a1a1a' }}>₹{fmt(grandTotal)}</span>
+                <div style={{ borderTop: '2px solid #1a1a1a', marginTop: '4px', paddingTop: '5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 'bold' }}>TOTAL AMOUNT:</span>
+                    <span style={{ fontSize: '15px', fontWeight: '900', color: '#1a1a1a' }}>₹{fmt(grandTotal)}</span>
                 </div>
                 {INVOICE_CONFIG.showBalanceDue && totalPaid > 0 && (
                     <>
@@ -235,19 +235,18 @@ function TotalsBlock({ order, totalPaid }) {
 function PaymentDetailsBlock() {
     if (!PAYMENT_DETAILS.show) return null;
     return (
-        <div style={{ padding: '8px 12px', background: '#f8f8f8', borderRadius: '6px', borderTop: '2px solid #e0e0e0', marginBottom: '10px', display: 'flex', gap: '24px', alignItems: 'center' }}>
+        <div style={{ padding: '5px 10px', background: '#f8f8f8', borderRadius: '5px', borderTop: '2px solid #e0e0e0', marginBottom: '6px', display: 'flex', gap: '16px', alignItems: 'center' }}>
             <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#888', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>Payment Details</div>
-                <div style={{ fontSize: '11px', color: '#444', lineHeight: '1.6' }}>
+                <div style={{ fontSize: '8px', fontWeight: 'bold', color: '#888', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '3px' }}>Payment Details</div>
+                <div style={{ fontSize: '9px', color: '#444', lineHeight: '1.5' }}>
                     <div><strong>Bank:</strong> {PAYMENT_DETAILS.bankName}</div>
-                    <div><strong>Axc Name:</strong> {PAYMENT_DETAILS.accountName}</div>
+                    <div><strong>A/c Name:</strong> {PAYMENT_DETAILS.accountName}</div>
                     <div><strong>A/c No:</strong> {PAYMENT_DETAILS.accountNumber}</div>
-                    <div><strong>IFSC:</strong> {PAYMENT_DETAILS.ifscCode}</div>
-                    <div><strong>UPI ID:</strong> {PAYMENT_DETAILS.upiId}</div>
+                    <div><strong>IFSC:</strong> {PAYMENT_DETAILS.ifscCode} &nbsp;&nbsp; <strong>UPI:</strong> {PAYMENT_DETAILS.upiId}</div>
                 </div>
             </div>
             {PAYMENT_DETAILS.qrCodeUrl && (
-                <div style={{ width: '80px', height: '80px', flexShrink: 0 }}>
+                <div style={{ width: '60px', height: '60px', flexShrink: 0 }}>
                     <img src={PAYMENT_DETAILS.qrCodeUrl} alt="QR Code" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 </div>
             )}
@@ -258,14 +257,14 @@ function PaymentDetailsBlock() {
 function SignatureBlock() {
     if (!INVOICE_CONFIG.showSignatures) return null;
     return (
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', paddingTop: '10px' }}>
-            <div style={{ textAlign: 'center', width: '160px' }}>
-                <div style={{ borderTop: '1px solid #888', paddingTop: '8px', fontSize: '12px' }}>Customer Signature</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', paddingTop: '6px' }}>
+            <div style={{ textAlign: 'center', width: '140px' }}>
+                <div style={{ borderTop: '1px solid #888', paddingTop: '5px', fontSize: '10px' }}>Customer Signature</div>
             </div>
-            <div style={{ textAlign: 'center', width: '160px' }}>
-                <div style={{ borderTop: '1px solid #888', paddingTop: '8px', fontSize: '12px' }}>
+            <div style={{ textAlign: 'center', width: '140px' }}>
+                <div style={{ borderTop: '1px solid #888', paddingTop: '5px', fontSize: '10px' }}>
                     <div>Authorised Signatory</div>
-                    <div style={{ fontSize: '10px', color: '#888' }}>For {COMPANY.name}</div>
+                    <div style={{ fontSize: '9px', color: '#888' }}>For {COMPANY.name}</div>
                 </div>
             </div>
         </div>
@@ -275,10 +274,10 @@ function SignatureBlock() {
 function TermsBlock() {
     if (!INVOICE_CONFIG.showTerms || !INVOICE_CONFIG.terms.length) return null;
     return (
-        <div style={{ marginTop: '10px', padding: '8px 10px', background: '#f8f8f8', borderRadius: '6px', borderTop: '2px solid #e0e0e0' }}>
-            <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#888', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>Terms & Conditions</div>
+        <div style={{ marginTop: '5px', padding: '5px 8px', background: '#f8f8f8', borderRadius: '5px', borderTop: '1px solid #e0e0e0' }}>
+            <div style={{ fontSize: '8px', fontWeight: 'bold', color: '#888', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '3px' }}>Terms & Conditions</div>
             {INVOICE_CONFIG.terms.map((t, i) => (
-                <div key={i} style={{ fontSize: '10px', color: '#666', marginBottom: '2px' }}>{i + 1}. {t}</div>
+                <div key={i} style={{ fontSize: '8px', color: '#666', marginBottom: '1px' }}>{i + 1}. {t}</div>
             ))}
         </div>
     );
@@ -290,7 +289,7 @@ function TermsBlock() {
 export default function InvoiceTemplate({ order, items, totalPaid }) {
     if (!order) return null;
     return (
-        <div className="invoice-print-container hidden print:block" style={{ width: '210mm', minHeight: '297mm', margin: '0 auto', background: '#fff', color: '#1a1a1a', fontFamily: 'Arial, sans-serif', padding: '10mm 12mm' }}>
+        <div className="invoice-print-container hidden print:block" style={{ width: '210mm', height: '297mm', margin: '0 auto', background: '#fff', color: '#1a1a1a', fontFamily: 'Arial, sans-serif', padding: '8mm 10mm', boxSizing: 'border-box', overflow: 'hidden', pageBreakAfter: 'avoid' }}>
             <InvoiceHeader order={order} />
             <PartySection order={order} />
             <ItemsTable items={items} />
@@ -298,7 +297,7 @@ export default function InvoiceTemplate({ order, items, totalPaid }) {
             <PaymentDetailsBlock />
             {INVOICE_CONFIG.showSignatures && <SignatureBlock />}
             <TermsBlock />
-            <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '11px', color: '#aaa', borderTop: '1px solid #eee', paddingTop: '12px' }}>
+            <div style={{ textAlign: 'center', marginTop: '6px', fontSize: '9px', color: '#aaa', borderTop: '1px solid #eee', paddingTop: '5px' }}>
                 {INVOICE_CONFIG.thankYouMessage}
             </div>
         </div>
