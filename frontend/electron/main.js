@@ -27,7 +27,14 @@ function createWindow() {
     } else {
         // In production, load the built index.html
         mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+        // Open DevTools in production for one build to debug the blank screen
+        mainWindow.webContents.openDevTools();
     }
+
+    // Diagnostic: Log if the page fails to load
+    mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+        console.error('Failed to load:', errorCode, errorDescription);
+    });
 
     mainWindow.on('closed', () => {
         mainWindow = null;
