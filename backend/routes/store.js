@@ -123,7 +123,7 @@ router.post('/bom', auth, allowRoles(ROLES.ADMIN, ROLES.STORE_INCHARGE), async (
 
 // POST /api/store/production
 router.post('/production', auth, allowRoles(ROLES.ADMIN, ROLES.STORE_INCHARGE), async (req, res) => {
-    const { product_id, quantity_produced, batch_number, packing_date, notes } = req.body;
+    const { product_id, quantity_produced, batch_number, packing_date, notes, mrp } = req.body;
     if (!product_id || !quantity_produced || quantity_produced <= 0) {
         return res.status(400).json({ error: 'Product ID and Quantity > 0 are required.' });
     }
