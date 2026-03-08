@@ -200,7 +200,7 @@ router.get('/samples', auth, async (req, res) => {
 });
 
 // POST /api/store/samples
-router.post('/samples', auth, allowRoles(ROLES.BILL_OPERATOR, ROLES.ADMIN, ROLES.SUPER_ADMIN), async (req, res) => {
+router.post('/samples', auth, allowRoles(ROLES.BILL_OPERATOR, ROLES.STORE_INCHARGE, ROLES.ADMIN, ROLES.SUPER_ADMIN), async (req, res) => {
     try {
         const { product_id, quantity, reason, request_date, notes, batch_number, mrp, issued_to } = req.body;
         if (!product_id || !quantity || quantity <= 0) return res.status(400).json({ error: 'Invalid data.' });

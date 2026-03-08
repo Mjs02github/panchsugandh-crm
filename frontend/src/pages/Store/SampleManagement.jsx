@@ -96,24 +96,35 @@ export default function SampleManagement() {
     };
 
     const handlePrintSample = (sample) => {
-        // We'll pass a special flag in the URL or state to indicate this is a sample invoice
-        // For now, let's use a URL param that InvoiceTemplate can pick up
-        const sampleData = encodeURIComponent(JSON.stringify({
+        const order = {
+            id: sample.id,
             isSample: true,
-            id: `SMP-${sample.id}`,
-            party_name: sample.issued_to || "SAMPLE ISSUE",
-            created_at: sample.approved_at || sample.created_at,
-            items: [{
-                product_name: sample.product_name,
-                batch_number: sample.batch_number,
-                mrp: sample.mrp,
-                quantity: sample.quantity,
-                rate: 0, // Zero value for samples
-                amount: 0
-            }],
+            issued_to: sample.issued_to || "N/A",
+            bill_number: `SMP-${sample.id}`,
+            bill_date: sample.approved_at || sample.request_date || sample.created_at || new Date().toISOString(),
+            request_reason: sample.reason,
+            requested_by_name: sample.requester_name,
             total_amount: 0,
-            notes: `Reason: ${sample.reason}`
-        }));
+            subtotal: 0,
+            gst_amount: 0,
+            discount: 0
+        };
+
+        const items = [{
+            product_name: sample.product_name,
+            batch_number: sample.batch_number,
+            mrp: sample.mrp,
+            quantity: sample.quantity,
+            unit_price: 0,
+            line_amount: 0,
+            unit: 'PCS'
+        }];
+
+        const sampleData = encodeURIComponent(btoa(JSON.stringify({
+            order,
+            items,
+            totalPaid: 0
+        })));
         window.open(`/invoice/print?data=${sampleData}`, '_blank');
     };
 
@@ -124,12 +135,12 @@ export default function SampleManagement() {
                     <h1 className="text-2xl font-bold">Sample Issues & Requests</h1>
                     <p className="text-gray-500 text-sm">Free stock issuance tracking with Admin approval workflow.</p>
                 </div>
-                {user?.role === 'bill_operator' || isAdmin ? (
+                {user?.role === 'bill_operator' || user?.role === 'store_incharge' || isAdmin ? (
                     <button
                         onClick={() => setShowRequestModal(true)}
                         className="bg-brand-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-brand-700 transition-colors"
                     >
-                        Request Sample
+                        + Request Sample
                     </button>
                 ) : null}
             </div>
@@ -179,12 +190,12 @@ export default function SampleManagement() {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex justify-end gap-2">
-                                            {r.status === 'APPROVED' && (
+                                            {r.status !== 'REJECTED' && (
                                                 <button
                                                     onClick={() => handlePrintSample(r)}
                                                     className="px-2 py-1 bg-brand-50 text-brand-600 border border-brand-200 text-[10px] font-bold rounded hover:bg-brand-100"
                                                 >
-                                                    Print Sample
+                                                    {r.status === 'PENDING' ? 'Print Draft' : 'Print Sample'}
                                                 </button>
                                             )}
                                             {r.status === 'PENDING' && isAdmin ? (
