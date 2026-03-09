@@ -146,19 +146,24 @@ export default function BillingQueue() {
         if (!billNum.trim()) return setError('Bill number is required.');
         setSubmitting(true); setError('');
         try {
-            const billingItems = orderItems.map(it => ({
-                id: it.id,
-                qty_billed: it.qty_billed ?? it.qty_ordered,
-                discount_pct: itemDiscounts[it.id] ?? parseFloat(it.discount_pct || 0),
-                batch_number: itemBatches[it.id] || null,
-                mrp: itemMRPs[it.id] ?? parseFloat(it.mrp || 0),
-                line_amount: parseFloat(calcLineAmt(
-                    itemMRPs[it.id] ?? it.mrp,
-                    it.gst_rate,
-                    itemDiscounts[it.id] ?? it.discount_pct,
-                    it.qty_billed ?? it.qty_ordered
-                ).toFixed(2)),
-            }));
+            const billingItems = orderItems.map(it => {
+                const mrp = itemMRPs[it.id] ?? parseFloat(it.mrp || 0);
+                const unitPrice = calcBaseRate(mrp, it.gst_rate);
+                return {
+                    id: it.id,
+                    qty_billed: it.qty_billed ?? it.qty_ordered,
+                    discount_pct: itemDiscounts[it.id] ?? parseFloat(it.discount_pct || 0),
+                    batch_number: itemBatches[it.id] || null,
+                    mrp: mrp,
+                    unit_price: parseFloat(unitPrice.toFixed(2)),
+                    line_amount: parseFloat(calcLineAmt(
+                        mrp,
+                        it.gst_rate,
+                        itemDiscounts[it.id] ?? it.discount_pct,
+                        it.qty_billed ?? it.qty_ordered
+                    ).toFixed(2)),
+                };
+            });
             const finalAmt = parseFloat(computedTotal.toFixed(2));
             await api.patch(`/orders/${orderId}/bill`, {
                 bill_number: billNum,
@@ -169,7 +174,9 @@ export default function BillingQueue() {
             const billedOrder = orders.find(o => o.id === orderId);
             setLastBilledOrder({ ...billedOrder, bill_number: billNum, bill_date: billDate, total_amount: finalAmt, status: 'BILLED' });
             setSuccess('Order marked as BILLED! You can now print the invoice.');
-            setSelected(null); setBillNum(''); setOrderItems([]); setItemDiscounts({});
+            setSelected(null); setBillNum('');
+            // We keep orderItems for the hidden InvoiceTemplate print preview
+            // till another order is selected or tab changed.
             loadQueue();
         } catch (err) {
             setError(err.response?.data?.error || 'Failed to update.');

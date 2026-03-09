@@ -107,7 +107,7 @@ router.get('/:id', auth, allowRoles(...ALL_ORDER_ROLES), async (req, res) => {
         if (!orders.length) return res.status(404).json({ error: 'Order not found.' });
 
         const [items] = await db.query(
-            `SELECT oi.*, p.name AS product_name, p.unit, p.sku, p.mrp
+            `SELECT oi.*, p.name AS product_name, p.unit, p.sku, p.mrp AS default_mrp
        FROM order_items oi
        JOIN products p ON oi.product_id = p.id
        WHERE oi.order_id = ?`,
@@ -304,6 +304,10 @@ router.patch('/:id/bill', auth, allowRoles(ROLES.BILL_OPERATOR, ROLES.ADMIN, ROL
                     if (item.mrp) {
                         fields.push('mrp = ?');
                         params.push(item.mrp);
+                    }
+                    if (item.unit_price) {
+                        fields.push('unit_price = ?');
+                        params.push(item.unit_price);
                     }
 
                     if (fields.length > 0) {
