@@ -1,18 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow } from '@react-google-maps/api';
 
-// Fix for default marker icon in react-leaflet
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-});
+const containerStyle = { width: '100%', height: '100%' };
+const LIBRARIES = ['places'];
 
 export default function SalespersonTracking() {
     const { user } = useAuth();
@@ -24,40 +17,56 @@ export default function SalespersonTracking() {
     const [locations, setLocations] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [liveStatus, setLiveStatus] = useState({});
+    const [liveLocations, setLiveLocations] = useState([]);
+    const [mapMode, setMapMode] = useState('roadmap'); // roadmap or satellite
+    const [isLiveView, setIsLiveView] = useState(true);
+    const [activeMarker, setActiveMarker] = useState(null);
+
+    const { isLoaded } = useJsApiLoader({
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
+        libraries: LIBRARIES
+    });
 
     useEffect(() => {
-        // Fetch users to populate the dropdown
+        // Fetch users
         api.get('/users').then(res => {
-            // Filter for trackable users
-            const trackers = res.data.filter(u =>
-                ['salesperson', 'sales_officer'].includes(u.role)
-            );
+            const trackers = res.data.filter(u => ['salesperson', 'sales_officer'].includes(u.role));
             setSalespersons(trackers);
-            if (trackers.length > 0) setSelectedUser(trackers[0].id);
         }).catch(err => console.error(err));
 
-        // Fetch live status
-        api.get('/locations/live').then(res => {
-            const statusMap = {};
-            res.data.forEach(item => {
-                statusMap[item.salesperson_id] = item.last_ping_at;
-            });
-            setLiveStatus(statusMap);
-        }).catch(err => console.error('Failed to fetch live status', err));
+        // Fetch live locations
+        const fetchLive = () => {
+            api.get('/locations/live').then(res => setLiveLocations(res.data))
+                .catch(err => console.error('Live fetch failed', err));
+        };
+        fetchLive();
+        const interval = setInterval(fetchLive, 30000); // Poll every 30s
+        return () => clearInterval(interval);
     }, []);
 
     useEffect(() => {
-        if (!selectedUser) return;
+        if (!selectedUser || isLiveView) return;
         setLoading(true);
         setError('');
         api.get(`/locations/history/${selectedUser}`, { params: { date } })
             .then(res => setLocations(res.data))
             .catch(err => setError('Failed to fetch location history.'))
             .finally(() => setLoading(false));
-    }, [selectedUser, date]);
+    }, [selectedUser, date, isLiveView]);
 
     const handleBack = () => navigate(-1);
+
+    const mapCenter = useMemo(() => {
+        if (isLiveView && liveLocations.length > 0) {
+            return { lat: parseFloat(liveLocations[0].latitude), lng: parseFloat(liveLocations[0].longitude) };
+        }
+        if (!isLiveView && locations.length > 0) {
+            return { lat: parseFloat(locations[locations.length - 1].latitude), lng: parseFloat(locations[locations.length - 1].longitude) };
+        }
+        return { lat: 25.4484, lng: 81.8333 }; // Prayagraj default
+    }, [isLiveView, liveLocations, locations]);
+
+    if (!isLoaded) return <div className="p-10 text-center">Loading Maps...</div>;
 
     return (
         <div className="pb-24">
@@ -68,103 +77,144 @@ export default function SalespersonTracking() {
                     </button>
                     <h1 className="text-lg font-semibold text-gray-800">GPS Tracking</h1>
                 </div>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => setIsLiveView(!isLiveView)}
+                        className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider transition-all shadow-sm ${isLiveView ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-500 border border-gray-200'}`}
+                    >
+                        {isLiveView ? '● Live Mode' : 'History Mode'}
+                    </button>
+                    <button
+                        onClick={() => setMapMode(mapMode === 'roadmap' ? 'satellite' : 'roadmap')}
+                        className="px-3 py-1 bg-brand-50 text-brand-700 border border-brand-100 rounded-full text-xs font-bold uppercase shadow-sm"
+                    >
+                        {mapMode === 'roadmap' ? 'Satellite View' : 'Road View'}
+                    </button>
+                </div>
             </div>
 
             <div className="p-4 space-y-4">
                 {error && <p className="text-red-500 text-sm">{error}</p>}
 
-                <div className="card space-y-3">
-                    <div>
-                        <label className="label">Select Salesperson</label>
-                        <select className="input" value={selectedUser} onChange={e => setSelectedUser(e.target.value)}>
-                            <option value="">-- Select Person --</option>
-                            {salespersons.map(s => {
-                                const lastPing = liveStatus[s.id];
-                                const isLive = lastPing && (new Date() - new Date(lastPing)) < 30 * 60 * 1000;
-                                return (
-                                    <option key={s.id} value={s.id}>
-                                        {isLive ? '🟢 ' : ''}{s.name} ({s.role.replace('_', ' ')})
-                                    </option>
-                                );
-                            })}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="label">Select Date</label>
-                        <input className="input" type="date" value={date} onChange={e => setDate(e.target.value)} max={new Date().toISOString().slice(0, 10)} />
-                    </div>
-                </div>
-
-                <div className="card space-y-2">
-                    <h2 className="font-semibold text-gray-700 flex justify-between">
-                        <span>Location Path</span>
-                        <span className="text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{locations.length} pings</span>
-                    </h2>
-
-                    {loading ? (
-                        <div className="flex justify-center py-6">
-                            <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+                {!isLiveView && (
+                    <div className="card grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="label">Select Salesperson</label>
+                            <select className="input" value={selectedUser} onChange={e => setSelectedUser(e.target.value)}>
+                                <option value="">-- Select Person --</option>
+                                {salespersons.map(s => (
+                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                ))}
+                            </select>
                         </div>
-                    ) : locations.length === 0 ? (
-                        <p className="text-gray-400 text-sm text-center py-4">No location data found for this date.</p>
-                    ) : (
-                        <div className="space-y-4">
-                            {/* Map View */}
-                            <div className="h-64 w-full rounded-xl overflow-hidden border border-gray-200 shadow-inner z-0 relative">
-                                <MapContainer
-                                    center={[locations[0].latitude, locations[0].longitude]}
-                                    zoom={14}
-                                    style={{ height: '100%', width: '100%', zIndex: 0 }}
-                                >
-                                    <TileLayer
-                                        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                        <div>
+                            <label className="label">Select Date</label>
+                            <input className="input" type="date" value={date} onChange={e => setDate(e.target.value)} max={new Date().toISOString().slice(0, 10)} />
+                        </div>
+                    </div>
+                )}
+
+                <div className="card p-0 overflow-hidden shadow-lg border-0 bg-white rounded-2xl">
+                    <div className="h-[450px] w-full relative">
+                        {!import.meta.env.VITE_GOOGLE_MAPS_API_KEY && (
+                            <div className="absolute inset-0 bg-gray-50 flex items-center justify-center p-10 text-center z-10">
+                                <p className="text-gray-500 text-sm">Please set <b>VITE_GOOGLE_MAPS_API_KEY</b> in your .env file to enable high-accuracy tracking.</p>
+                            </div>
+                        )}
+                        <GoogleMap
+                            mapContainerStyle={containerStyle}
+                            center={mapCenter}
+                            zoom={isLiveView ? 8 : 14}
+                            mapTypeId={mapMode}
+                            options={{
+                                streetViewControl: false,
+                                mapTypeControl: false,
+                                fullscreenControl: true
+                            }}
+                        >
+                            {isLiveView ? (
+                                liveLocations.map((loc) => (
+                                    <Marker
+                                        key={loc.salesperson_id}
+                                        position={{ lat: parseFloat(loc.latitude), lng: parseFloat(loc.longitude) }}
+                                        label={{
+                                            text: loc.salesperson_name,
+                                            className: "map-label",
+                                            color: "white",
+                                            fontSize: "12px",
+                                            fontWeight: "bold"
+                                        }}
+                                        onClick={() => setActiveMarker(loc)}
                                     />
+                                ))
+                            ) : (
+                                <>
                                     <Polyline
-                                        positions={locations.map(loc => [loc.latitude, loc.longitude])}
-                                        color="#0ea5e9" weight={4} opacity={0.7} dashArray="8, 8"
+                                        path={locations.map(loc => ({ lat: parseFloat(loc.latitude), lng: parseFloat(loc.longitude) }))}
+                                        options={{ strokeColor: "#0ea5e9", strokeOpacity: 0.8, strokeWeight: 5 }}
                                     />
-                                    {locations.map((loc, idx) => {
-                                        const time = new Date(loc.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                                        const isStart = idx === 0;
-                                        const isEnd = idx === locations.length - 1;
-                                        return (
-                                            <Marker key={idx} position={[loc.latitude, loc.longitude]}>
-                                                <Popup>
-                                                    <div className="text-sm font-semibold">{time}</div>
-                                                    <div className="text-xs text-gray-500">{isStart ? 'Start Point' : isEnd ? 'Current Point' : 'Ping'}</div>
-                                                </Popup>
-                                            </Marker>
-                                        );
-                                    })}
-                                </MapContainer>
-                            </div>
+                                    {locations.length > 0 && (
+                                        <Marker
+                                            position={{ lat: parseFloat(locations[locations.length - 1].latitude), lng: parseFloat(locations[locations.length - 1].longitude) }}
+                                            label="Current"
+                                        />
+                                    )}
+                                    {locations.length > 1 && (
+                                        <Marker
+                                            position={{ lat: parseFloat(locations[0].latitude), lng: parseFloat(locations[0].longitude) }}
+                                            label="Start"
+                                        />
+                                    )}
+                                </>
+                            )}
 
-                            {/* Timeline View */}
-                            <div className="relative border-l-2 border-brand-200 ml-3 space-y-4 py-2 mt-4">
-                                {locations.map((loc, idx) => {
-                                    const time = new Date(loc.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                                    return (
-                                        <div key={idx} className="relative pl-5">
-                                            <div className="absolute w-3 h-3 bg-brand-500 rounded-full -left-[7px] top-1 border-2 border-white shadow-sm" />
-                                            <div className="text-sm font-medium text-gray-800">{time}</div>
-                                            <a
-                                                href={`https://maps.google.com/?q=${loc.latitude},${loc.longitude}`}
-                                                target="_blank" rel="noreferrer"
-                                                className="text-xs text-blue-600 underline font-medium inline-block mt-0.5"
-                                            >
-                                                View on Google Maps 📍
-                                            </a>
-                                            <p className="text-[10px] text-gray-400 mt-0.5 font-mono">
-                                                {Number(loc.latitude).toFixed(5)}, {Number(loc.longitude).toFixed(5)}
-                                            </p>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
+                            {activeMarker && (
+                                <InfoWindow
+                                    position={{ lat: parseFloat(activeMarker.latitude), lng: parseFloat(activeMarker.longitude) }}
+                                    onCloseClick={() => setActiveMarker(null)}
+                                >
+                                    <div className="p-1">
+                                        <div className="font-bold text-gray-800">{activeMarker.salesperson_name}</div>
+                                        <div className="text-[10px] text-gray-500">Last Seen: {new Date(activeMarker.last_ping_at).toLocaleTimeString()}</div>
+                                        <div className="text-[10px] text-gray-400 mt-1">{activeMarker.latitude}, {activeMarker.longitude}</div>
+                                    </div>
+                                </InfoWindow>
+                            )}
+                        </GoogleMap>
+                    </div>
                 </div>
+
+                {!isLiveView && locations.length > 0 && (
+                    <div className="card space-y-2">
+                        <h2 className="font-semibold text-gray-700 flex justify-between">
+                            <span>Journey History</span>
+                            <span className="text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{locations.length} pings</span>
+                        </h2>
+                        <div className="relative border-l-2 border-brand-200 ml-3 space-y-4 py-2 mt-4 max-h-64 overflow-y-auto pr-2">
+                            {locations.map((loc, idx) => (
+                                <div key={idx} className="relative pl-5">
+                                    <div className="absolute w-3 h-3 bg-brand-500 rounded-full -left-[7px] top-1 border-2 border-white shadow-sm" />
+                                    <div className="text-sm font-medium text-gray-800">{new Date(loc.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                    <p className="text-[10px] text-gray-400 mt-0.5 font-mono">
+                                        {Number(loc.latitude).toFixed(5)}, {Number(loc.longitude).toFixed(5)}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
+
+            <style>{`
+                .map-label {
+                    background-color: #0369a1;
+                    padding: 2px 8px;
+                    border-radius: 4px;
+                    border: 2px solid white;
+                    margin-top: -40px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                }
+            `}</style>
         </div>
     );
 }

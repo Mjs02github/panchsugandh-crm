@@ -5,7 +5,7 @@ import api from '../api';
 import { Geolocation } from '@capacitor/geolocation';
 import { Capacitor } from '@capacitor/core';
 
-const TRACKING_INTERVAL = 5 * 60 * 1000; // 5 minutes
+const TRACKING_INTERVAL = 2 * 60 * 1000; // 2 minutes
 
 export default function useGPSTracking() {
     const { user, isLoggedIn } = useAuth();
