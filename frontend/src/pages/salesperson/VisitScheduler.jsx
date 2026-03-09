@@ -52,9 +52,38 @@ export default function VisitScheduler() {
         } finally { setSaving(false); }
     };
 
+    const getGPSLocation = async () => {
+        try {
+            if (window.Capacitor?.isNativePlatform()) {
+                const { Geolocation } = await import('@capacitor/geolocation');
+                const permStatus = await Geolocation.checkPermissions();
+                if (permStatus.location !== 'granted') {
+                    const request = await Geolocation.requestPermissions();
+                    if (request.location !== 'granted') return { latitude: null, longitude: null };
+                }
+                const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 5000 });
+                return { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+            } else if (navigator.geolocation) {
+                const pos = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 });
+                });
+                return { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+            }
+        } catch (err) {
+            console.warn('GPS Error:', err);
+        }
+        return { latitude: null, longitude: null };
+    };
+
     const handleAction = async (visitId, action) => {
         try {
-            await api.patch(`/visits/${visitId}`, { action });
+            let payload = { action };
+            if (action === 'checkin') {
+                const gps = await getGPSLocation();
+                payload.latitude = gps.latitude;
+                payload.longitude = gps.longitude;
+            }
+            await api.patch(`/visits/${visitId}`, payload);
             load();
         } catch { }
     };
@@ -205,6 +234,6 @@ export default function VisitScheduler() {
                     </div>
                 ))}
             </div>
-                    </div>
+        </div>
     );
 }

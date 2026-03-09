@@ -64,10 +64,14 @@ router.post('/', auth, async (req, res) => {
 // PATCH /api/visits/:id — check in / check out / complete
 router.patch('/:id', auth, async (req, res) => {
     try {
-        const { action, remarks } = req.body;
+        const { action, remarks, latitude, longitude } = req.body;
         let updateObj = {};
 
-        if (action === 'checkin') { updateObj = { checked_in_at: new Date(), status: 'COMPLETED' }; }
+        if (action === 'checkin') {
+            updateObj = { checked_in_at: new Date(), status: 'COMPLETED' };
+            if (latitude) updateObj.latitude = latitude;
+            if (longitude) updateObj.longitude = longitude;
+        }
         if (action === 'checkout') { updateObj = { checked_out_at: new Date() }; }
         if (action === 'skip') { updateObj = { status: 'SKIPPED', remarks: remarks || null }; }
         if (remarks !== undefined) updateObj.remarks = remarks;

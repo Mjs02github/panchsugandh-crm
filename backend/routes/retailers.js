@@ -86,10 +86,10 @@ router.post('/', auth, allowRoles(...CAN_ADD_RETAILER), async (req, res) => {
 
         const [result] = await db.query(
             `INSERT INTO retailers
-         (firm_name, owner_name, phone, alt_phone, email, address, area_id, gst_number, credit_limit, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (firm_name, owner_name, phone, alt_phone, email, address, area_id, gst_number, credit_limit, latitude, longitude, created_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [firm_name, owner_name || null, phone || null, alt_phone || null, email || null,
-                address || null, finalAreaId, gst_number || null, credit_limit || 0, req.user.id]
+                address || null, finalAreaId, gst_number || null, credit_limit || 0, latitude || null, longitude || null, req.user.id]
         );
         res.status(201).json({ id: result.insertId, message: 'Retailer created.' });
     } catch (err) {
@@ -101,7 +101,7 @@ router.post('/', auth, allowRoles(...CAN_ADD_RETAILER), async (req, res) => {
 // PATCH /api/retailers/:id
 router.patch('/:id', auth, allowRoles(...STORE_ADMINS), async (req, res) => {
     try {
-        const fields = ['firm_name', 'owner_name', 'phone', 'alt_phone', 'email', 'address', 'area_id', 'gst_number', 'credit_limit', 'is_active'];
+        const fields = ['firm_name', 'owner_name', 'phone', 'alt_phone', 'email', 'address', 'area_id', 'gst_number', 'credit_limit', 'is_active', 'latitude', 'longitude'];
         const updates = {};
         fields.forEach(f => { if (req.body[f] !== undefined) updates[f] = req.body[f]; });
 

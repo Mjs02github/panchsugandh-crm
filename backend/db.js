@@ -63,6 +63,28 @@ pool.getConnection(async (err, conn) => {
             console.error('❌ Failed to run stock_inwards migration:', tableErr.message);
         }
 
+        // Auto-migrate: Retailer coordinates
+        try {
+            const [cols] = await conn.promise().query("SHOW COLUMNS FROM retailers LIKE 'latitude'");
+            if (cols.length === 0) {
+                await conn.promise().query("ALTER TABLE retailers ADD COLUMN latitude DECIMAL(10, 7) NULL, ADD COLUMN longitude DECIMAL(10, 7) NULL");
+                console.log(`✅ retailers table updated with latitude/longitude`);
+            }
+        } catch (tableErr) {
+            console.warn('⚠️ Retailer migration skipped or failed:', tableErr.message);
+        }
+
+        // Auto-migrate: Visit Check-in coordinates
+        try {
+            const [cols] = await conn.promise().query("SHOW COLUMNS FROM visits LIKE 'latitude'");
+            if (cols.length === 0) {
+                await conn.promise().query("ALTER TABLE visits ADD COLUMN latitude DECIMAL(10, 7) NULL, ADD COLUMN longitude DECIMAL(10, 7) NULL");
+                console.log(`✅ visits table updated with latitude/longitude`);
+            }
+        } catch (tableErr) {
+            console.warn('⚠️ Visit migration skipped or failed:', tableErr.message);
+        }
+
         // Auto-migrate: GPS salesperson location tracking
         try {
             await conn.promise().query(`
