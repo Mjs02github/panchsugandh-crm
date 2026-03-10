@@ -59,29 +59,27 @@ export default function useGPSTracking() {
                     // For background tracking, Android 10+ needs specific background permission
                     // Users must select "Allow all the time" in settings manually if not auto-requested
 
-                    // 2. Start Background Watcher
-                    // This keeps the app alive in the background via a foreground service
+                    // 2. Start Background Watcher (for movement + keeping app alive)
                     const id = await BackgroundGeolocation.addWatcher(
                         {
                             backgroundMessage: "Panchsugandh: Boost the sales, meet the target",
                             backgroundTitle: "Panchsugandh",
                             requestPermissions: true,
                             stale: false,
-                            distanceFilter: 10 // Pings when moved 10 meters, or on interval
+                            distanceFilter: 5 // Reduced from 10 to 5 for better sensitivity
                         },
                         (location, error) => {
-                            if (error) {
-                                if (error.code === "NOT_AUTHORIZED") {
-                                    console.warn("User denied location permissions for background tracking.");
-                                }
-                                return;
-                            }
                             if (location) {
                                 sendLocation(location.latitude, location.longitude);
                             }
                         }
                     );
                     backgroundWatcherId.current = id;
+
+                    // 3. ALSO start a standard interval as a backup
+                    // The BackgroundWatcher's foreground service will help this interval stay alive
+                    setupStandardInterval();
+
                 } catch (err) {
                     console.warn('Background tracking initialization failed:', err);
                     // Fallback to standard interval if background plugin fails
