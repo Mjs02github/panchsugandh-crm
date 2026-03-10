@@ -1,4 +1,5 @@
 const express = require('express');
+const axios = require('axios');
 const db = require('../db');
 const auth = require('../middleware/auth');
 const { allowRoles, ROLES } = require('../middleware/rbac');
@@ -113,6 +114,38 @@ router.patch('/:id', auth, allowRoles(...STORE_ADMINS), async (req, res) => {
         res.json({ message: 'Retailer updated.' });
     } catch (err) {
         res.status(500).json({ error: 'Server error.' });
+    }
+});
+
+// GET /api/retailers/gst-lookup/:gstin
+router.get('/gst-lookup/:gstin', auth, async (req, res) => {
+    try {
+        const { gstin } = req.params;
+        if (!gstin || gstin.length !== 15) {
+            return res.status(400).json({ error: 'Invalid GSTIN length.' });
+        }
+
+        // Using a semi-public endpoint for lookup (Search Taxpayer)
+        // Note: For production reliability, one should use a paid GSP API.
+        const response = await axios.get(`https://cleartax.in/s/api/gst-search/search-gstin?gstin=${gstin}`);
+        
+        const data = response.data;
+        if (!data || !data.taxpayer) {
+            return res.status(404).json({ error: 'GSTIN details not found.' });
+        }
+
+        const tp = data.taxpayer;
+        // Search Taxpayer response structure usually contains legalName, tradeName, address etc.
+        res.json({
+            firm_name: tp.tradeName || tp.legalName || '',
+            owner_name: tp.legalName || '',
+            address: tp.address || '',
+            state: tp.stateCodeName || '', // Cleartax often returns state in this field
+            district: tp.district || ''
+        });
+    } catch (err) {
+        console.error('GST Lookup Error:', err.message);
+        res.status(500).json({ error: 'Failed to fetch GST details. Service may be busy.' });
     }
 });
 

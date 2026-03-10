@@ -23,8 +23,37 @@ export default function RetailersList() {
         address: '', state: '', district: '', area_id: '', is_new_area: false, gst_number: '', credit_limit: '',
     });
     const [saving, setSaving] = useState(false);
+    const [fetchingGST, setFetchingGST] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+
+    const handleGSTLookup = async () => {
+        if (!form.gst_number || form.gst_number.length !== 15) {
+            setError('Please enter a valid 15-digit GST number first.');
+            return;
+        }
+        setFetchingGST(true);
+        setError('');
+        try {
+            const res = await api.get(`/retailers/gst-lookup/${form.gst_number.toUpperCase()}`);
+            const data = res.data;
+            setForm(f => ({
+                ...f,
+                firm_name: data.firm_name || f.firm_name,
+                owner_name: data.owner_name || f.owner_name,
+                address: data.address || f.address,
+                state: data.state || f.state,
+                district: data.district || f.district
+            }));
+            setSuccess('✅ Details fetched from GST records!');
+            setTimeout(() => setSuccess(''), 3000);
+        } catch (err) {
+            setError(err.response?.data?.error || 'Failed to fetch GST details.');
+        } finally {
+            setFetchingGST(false);
+        }
+    };
+
     const formStateObj = indiaStates.find(s => s.state === form.state);
     const formDistrictOptions = formStateObj ? formStateObj.districts : [];
 
@@ -232,8 +261,19 @@ export default function RetailersList() {
                     <div className="grid grid-cols-2 gap-2">
                         <div>
                             <label className="label">GST No.</label>
-                            <input className="input" value={form.gst_number}
-                                onChange={e => setForm(f => ({ ...f, gst_number: e.target.value }))} />
+                            <div className="flex gap-1">
+                                <input className="input flex-1" value={form.gst_number}
+                                    onChange={e => setForm(f => ({ ...f, gst_number: e.target.value.toUpperCase() }))} 
+                                    placeholder="e.g. 07AACCU3842M1ZP" />
+                                <button 
+                                    type="button" 
+                                    onClick={handleGSTLookup}
+                                    disabled={fetchingGST}
+                                    className="bg-brand-50 text-brand-600 px-2 py-1.5 rounded-lg text-xs font-bold border border-brand-200 hover:bg-brand-100 disabled:opacity-50"
+                                >
+                                    {fetchingGST ? '...' : '🔍 Fetch'}
+                                </button>
+                            </div>
                         </div>
                         {canEdit && (
                             <div>
