@@ -125,23 +125,42 @@ router.get('/gst-lookup/:gstin', auth, async (req, res) => {
             return res.status(400).json({ error: 'Invalid GSTIN length.' });
         }
 
-        // Using a semi-public endpoint for lookup (Search Taxpayer)
-        // Note: For production reliability, one should use a paid GSP API.
-        const response = await axios.get(`https://cleartax.in/s/api/gst-search/search-gstin?gstin=${gstin}`);
+        const url = `https://blog-backend.mastersindia.co/api/v1/custom/search/gstin/?keyword=${gstin.toUpperCase()}`;
         
-        const data = response.data;
-        if (!data || !data.taxpayer) {
-            return res.status(404).json({ error: 'GSTIN details not found.' });
+        const response = await axios.get(url, {
+            headers: {
+                'authority': 'blog-backend.mastersindia.co',
+                'accept': 'application/json, text/plain, */*',
+                'origin': 'https://www.mastersindia.co',
+                'referer': 'https://www.mastersindia.co/',
+                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
+            },
+            timeout: 10000
+        });
+        
+        const result = response.data;
+        if (!result || !result.success || !result.data) {
+            return res.status(404).json({ error: 'GSTIN details not found or service unavailable.' });
         }
 
-        const tp = data.taxpayer;
-        // Search Taxpayer response structure usually contains legalName, tradeName, address etc.
+        const tp = result.data;
+        const addr = tp.pradr?.addr || {};
+        
+        // Construct a clean address string
+        const addressParts = [
+            addr.bno, 
+            addr.st, 
+            addr.loc, 
+            addr.dst, 
+            tp.pradr?.ntr // Nature of business activity
+        ].filter(p => p && p !== 'null' && p !== 'undefined');
+
         res.json({
-            firm_name: tp.tradeName || tp.legalName || '',
-            owner_name: tp.legalName || '',
-            address: tp.address || '',
-            state: tp.stateCodeName || '', // Cleartax often returns state in this field
-            district: tp.district || ''
+            firm_name: tp.tradeNam || tp.lgnm || '',
+            owner_name: tp.lgnm || '',
+            address: addressParts.join(', '),
+            state: addr.stcd || '',
+            district: addr.dst || ''
         });
     } catch (err) {
         console.error('GST Lookup Error:', err.message);
