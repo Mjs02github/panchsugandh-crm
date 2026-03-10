@@ -179,4 +179,105 @@ router.get('/gst-lookup/:gstin', auth, async (req, res) => {
     }
 });
 
+// --- PARTY EDIT APPROVAL WORKFLOW ---
+
+// POST /api/retailers/edit-request
+// Allows Bill Operator and others to submit proposed changes
+router.post('/edit-request', auth, allowRoles(ROLES.BILL_OPERATOR, ROLES.SALESPERSON, ROLES.STORE_INCHARGE, ROLES.ADMIN, ROLES.SUPER_ADMIN), async (req, res) => {
+    try {
+        const { retailer_id, proposed_data } = req.body;
+        if (!retailer_id || !proposed_data) {
+            return res.status(400).json({ error: 'retailer_id and proposed_data are required.' });
+        }
+
+        await db.query(
+            `INSERT INTO retailer_edit_requests (retailer_id, requested_by, proposed_data, status)
+             VALUES (?, ?, ?, 'PENDING')`,
+            [retailer_id, req.user.id, JSON.stringify(proposed_data)]
+        );
+
+        res.status(201).json({ message: 'Edit request submitted for admin approval.' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error.' });
+    }
+});
+
+// GET /api/retailers/edit-requests
+// Admins can see all pending/processed requests
+router.get('/edit-requests', auth, allowRoles(ROLES.ADMIN, ROLES.SUPER_ADMIN), async (req, res) => {
+    try {
+        const { status = 'PENDING' } = req.query;
+        const [rows] = await db.query(
+            `SELECT rer.*, r.firm_name, u.name as requester_name
+             FROM retailer_edit_requests rer
+             JOIN retailers r ON rer.retailer_id = r.id
+             JOIN users u ON rer.requested_by = u.id
+             WHERE rer.status = ?
+             ORDER BY rer.created_at DESC`,
+            [status]
+        );
+        res.json(rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error.' });
+    }
+});
+
+// POST /api/retailers/edit-requests/:id/process
+// Approve or Reject a request
+router.post('/edit-requests/:id/process', auth, allowRoles(ROLES.ADMIN, ROLES.SUPER_ADMIN), async (req, res) => {
+    const connection = await db.getConnection();
+    try {
+        const { status, admin_remark } = req.body; // 'APPROVED' or 'REJECTED'
+        if (!['APPROVED', 'REJECTED'].includes(status)) {
+            return res.status(400).json({ error: 'Invalid status. Use APPROVED or REJECTED.' });
+        }
+
+        await connection.beginTransaction();
+
+        // 1. Get the request
+        const [requests] = await connection.query('SELECT * FROM retailer_edit_requests WHERE id = ? FOR UPDATE', [req.params.id]);
+        if (!requests.length) {
+            await connection.rollback();
+            return res.status(404).json({ error: 'Request not found.' });
+        }
+        const request = requests[0];
+        if (request.status !== 'PENDING') {
+            await connection.rollback();
+            return res.status(400).json({ error: 'Request already processed.' });
+        }
+
+        // 2. Update request status
+        await connection.query(
+            `UPDATE retailer_edit_requests 
+             SET status = ?, admin_remark = ?, processed_by = ?, processed_at = NOW() 
+             WHERE id = ?`,
+            [status, admin_remark || null, req.user.id, req.params.id]
+        );
+
+        // 3. If APPROVED, update the retailer table
+        if (status === 'APPROVED') {
+            const proposedData = typeof request.proposed_data === 'string' ? JSON.parse(request.proposed_data) : request.proposed_data;
+            const fields = Object.keys(proposedData);
+            if (fields.length > 0) {
+                const setClauses = fields.map(f => `${f} = ?`).join(', ');
+                await connection.query(
+                    `UPDATE retailers SET ${setClauses} WHERE id = ?`,
+                    [...Object.values(proposedData), request.retailer_id]
+                );
+            }
+        }
+
+        await connection.commit();
+        res.json({ message: `Request ${status.toLowerCase()} successfully.` });
+    } catch (err) {
+        await connection.rollback();
+        console.error(err);
+        res.status(500).json({ error: 'Server error.' });
+    } finally {
+        connection.release();
+    }
+});
+
 module.exports = router;
