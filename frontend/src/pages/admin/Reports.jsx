@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 
 const TABS = [
     { key: 'master', label: '📋 Master', endpoint: '/reports/master' },
+    { key: 'hsn', label: '🏷️ HSN-wise', endpoint: '/reports/hsn-wise' },
     { key: 'product', label: '📦 Product-wise', endpoint: '/reports/product-wise' },
     { key: 'party', label: '🏪 Party-wise', endpoint: '/reports/party-wise' },
     { key: 'date', label: '📅 Date-wise', endpoint: '/reports/date-wise' },

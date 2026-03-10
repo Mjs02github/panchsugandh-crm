@@ -434,4 +434,98 @@ router.get('/product-sales-batch-wise', auth, allowRoles(ROLES.SUPER_ADMIN, ROLE
     }
 });
 
+// ─────────────────────────────────────────────────────────
+// GET /api/reports/hsn-wise
+// ─────────────────────────────────────────────────────────
+router.get('/hsn-wise', auth, allowRoles(...REPORT_ROLES), async (req, res) => {
+    try {
+        const { from, to } = getDateRange(req.query);
+        const { conditions, params } = buildRoleFilter(req.user);
+
+        conditions.push('so.order_date BETWEEN ? AND ?');
+        params.push(from, to);
+        conditions.push("so.status NOT IN ('CANCELLED')");
+
+        const where = 'WHERE ' + conditions.join(' AND ');
+
+        const [rows] = await db.query(
+            `SELECT 
+                p.hsn_code AS 'HSN Code',
+                p.category AS Category,
+                p.unit AS Unit,
+                SUM(COALESCE(oi.qty_billed, oi.qty_ordered)) AS 'Total Qty',
+                ROUND(SUM(oi.line_amount / (1 + oi.gst_rate/100)), 2) AS 'Taxable Value',
+                ROUND(SUM(oi.line_amount - (oi.line_amount / (1 + oi.gst_rate/100))), 2) AS 'GST Amount',
+                ROUND(SUM(oi.line_amount), 2) AS 'Total Amount'
+            FROM sales_orders so
+            JOIN order_items oi ON oi.order_id = so.id
+            JOIN products p ON oi.product_id = p.id
+            JOIN users u ON so.salesperson_id = u.id
+            ${where}
+            GROUP BY p.hsn_code, p.category, p.unit
+            ORDER BY p.hsn_code ASC`,
+            params
+        );
+
+        if (req.query.format === 'excel') {
+            const workbook = new ExcelJS.Workbook();
+            const sheet = workbook.addWorksheet('HSN Summary');
+            if (rows.length > 0) {
+                sheet.columns = Object.keys(rows[0]).map(key => ({ header: key, key, width: 22 }));
+                styleHeaderRow(sheet, sheet.getRow(1));
+                rows.forEach(row => { sheet.addRow(Object.values(row)).height = 18; });
+            }
+            return sendExcel(res, workbook, `HSN_Summary_${from}_to_${to}.xlsx`);
+        }
+        res.json({ data: rows, from, to });
+    } catch (err) {
+        console.error('HSN report error:', err);
+        res.status(500).json({ error: 'Server error.' });
+    }
+});
+
+// ─────────────────────────────────────────────────────────
+// GET /api/reports/gst-data
+// ─────────────────────────────────────────────────────────
+router.get('/gst-data', auth, allowRoles(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.BILL_OPERATOR), async (req, res) => {
+    try {
+        const { from, to } = getDateRange(req.query);
+        const [rows] = await db.query(
+            `SELECT 
+                so.bill_number AS 'Invoice No',
+                DATE_FORMAT(so.bill_date, '%Y-%m-%d') AS 'Invoice Date',
+                r.firm_name AS 'Party Name',
+                r.gst_number AS 'Party GSTIN',
+                a.name AS 'Area',
+                ROUND(SUM(oi.line_amount / (1 + oi.gst_rate/100)), 2) AS 'Taxable Value',
+                ROUND(SUM(oi.line_amount - (oi.line_amount / (1 + oi.gst_rate/100))), 2) AS 'GST Amount',
+                ROUND(SUM(oi.line_amount), 2) AS 'Invoice Value'
+            FROM sales_orders so
+            JOIN retailers r ON so.retailer_id = r.id
+            LEFT JOIN areas a ON r.area_id = a.id
+            JOIN order_items oi ON oi.order_id = so.id
+            WHERE so.bill_date BETWEEN ? AND ? AND so.status NOT IN ('CANCELLED')
+            GROUP BY so.id
+            ORDER BY so.bill_date ASC, so.bill_number ASC`,
+            [from, to]
+        );
+
+        if (req.query.format === 'json') {
+            return res.json({ data: rows, from, to });
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('GST Data');
+        if (rows.length > 0) {
+            sheet.columns = Object.keys(rows[0]).map(key => ({ header: key, key, width: 22 }));
+            styleHeaderRow(sheet, sheet.getRow(1));
+            rows.forEach(row => { sheet.addRow(Object.values(row)).height = 18; });
+        }
+        return sendExcel(res, workbook, `GST_Data_${from}_to_${to}.xlsx`);
+    } catch (err) {
+        console.error('GST data export error:', err);
+        res.status(500).json({ error: 'Server error.' });
+    }
+});
+
 module.exports = router;

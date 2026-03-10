@@ -14,6 +14,7 @@ const NAV_CONFIG = {
     ],
     bill_operator: [
         { label: 'Queue', icon: '📄', path: '/billing' },
+        { label: 'Tax Panel', icon: '🏦', path: '/admin/tax-panel' },
         { label: 'Samples', icon: '🎁', path: '/store/samples' },
         { label: 'Parties', icon: '🏪', path: '/store/retailers' },
         { label: 'Products', icon: '📦', path: '/store/products' },
@@ -44,6 +45,7 @@ const NAV_CONFIG = {
         { label: 'Dashboard', icon: '📊', path: '/dashboard' },
         { label: 'Orders', icon: '📋', path: '/orders' },
         { label: 'Store Management', icon: '🏬', path: '/store' },
+        { label: 'Tax Panel', icon: '🏦', path: '/admin/tax-panel' },
         { label: 'Users', icon: '👤', path: '/admin/users' },
         { label: 'Tracking', icon: '📍', path: '/admin/tracking' },
         { label: 'Reports', icon: '📊', path: '/reports' },
@@ -53,6 +55,7 @@ const NAV_CONFIG = {
         { label: 'Dashboard', icon: '📊', path: '/dashboard' },
         { label: 'Orders', icon: '📋', path: '/orders' },
         { label: 'Store Management', icon: '🏬', path: '/store' },
+        { label: 'Tax Panel', icon: '🏦', path: '/admin/tax-panel' },
         { label: 'Users', icon: '👤', path: '/admin/users' },
         { label: 'Tracking', icon: '📍', path: '/admin/tracking' },
         { label: 'Reports', icon: '📊', path: '/reports' },

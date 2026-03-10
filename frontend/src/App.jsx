@@ -36,6 +36,7 @@ import UserManagement from './pages/admin/UserManagement';
 import SalespersonTracking from './pages/admin/SalespersonTracking';
 import AttendanceReport from './pages/admin/AttendanceReport';
 import Reports from './pages/admin/Reports';
+import TaxPanel from './pages/admin/TaxPanel';
 import Chat from './pages/Chat';
 
 // Store Management (New Production System)
@@ -172,6 +173,9 @@ export default function App() {
           } />
           <Route path="/reports" element={
             <ProtectedRoute roles={['admin', 'super_admin', 'sales_officer', 'salesperson']}><AdaptiveLayout><Reports /></AdaptiveLayout></ProtectedRoute>
+          } />
+          <Route path="/admin/tax-panel" element={
+            <ProtectedRoute roles={['admin', 'super_admin', 'bill_operator']}><AdaptiveLayout><TaxPanel /></AdaptiveLayout></ProtectedRoute>
           } />
           <Route path="/chat" element={
             <ProtectedRoute roles={['admin', 'super_admin', 'sales_officer', 'salesperson', 'bill_operator', 'delivery_incharge', 'store_incharge']}><AdaptiveLayout><Chat /></AdaptiveLayout></ProtectedRoute>

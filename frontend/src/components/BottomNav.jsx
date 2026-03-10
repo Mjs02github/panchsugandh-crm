@@ -13,9 +13,8 @@ const NAV_CONFIG = {
     ],
     bill_operator: [
         { label: 'Queue', icon: '📄', path: '/billing' },
-        { label: 'Samples', icon: '🎁', path: '/store/samples' },
+        { label: 'Tax', icon: '🏦', path: '/admin/tax-panel' },
         { label: 'Parties', icon: '🏪', path: '/store/retailers' },
-        { label: 'Products', icon: '📦', path: '/store/products' },
         { label: 'Chat', icon: '💬', path: '/chat', badge: true },
     ],
     delivery_incharge: [
@@ -41,16 +40,14 @@ const NAV_CONFIG = {
     ],
     admin: [
         { label: 'Dashboard', icon: '📊', path: '/dashboard' },
-        { label: 'Orders', icon: '📋', path: '/orders' },
-        { label: 'Store Management', icon: '🏬', path: '/store' },
+        { label: 'Tax', icon: '🏦', path: '/admin/tax-panel' },
         { label: 'Users', icon: '👤', path: '/admin/users' },
         { label: 'Reports', icon: '📊', path: '/reports' },
         { label: 'Chat', icon: '💬', path: '/chat', badge: true },
     ],
     super_admin: [
         { label: 'Dashboard', icon: '📊', path: '/dashboard' },
-        { label: 'Orders', icon: '📋', path: '/orders' },
-        { label: 'Store Management', icon: '🏬', path: '/store' },
+        { label: 'Tax', icon: '🏦', path: '/admin/tax-panel' },
         { label: 'Users', icon: '👤', path: '/admin/users' },
         { label: 'Reports', icon: '📊', path: '/reports' },
         { label: 'Chat', icon: '💬', path: '/chat', badge: true },
