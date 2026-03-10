@@ -10,6 +10,8 @@ export default function RetailersList() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const canEdit = CAN_EDIT.includes(user?.role);
+    const isBillOperator = user?.role === 'bill_operator';
+    const canRequestEdit = canEdit || isBillOperator;
 
     const [retailers, setRetailers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -19,7 +21,7 @@ export default function RetailersList() {
     const [showForm, setShowForm] = useState(false);
     const [areas, setAreas] = useState([]);
     const [form, setForm] = useState({
-        firm_name: '', owner_name: '', phone: '', alt_phone: '',
+        id: '', firm_name: '', owner_name: '', phone: '', alt_phone: '',
         address: '', state: '', district: '', area_id: '', is_new_area: false, gst_number: '', credit_limit: '',
     });
     const [saving, setSaving] = useState(false);
@@ -78,7 +80,7 @@ export default function RetailersList() {
     }, [search]);
 
     const resetForm = () => setForm({
-        firm_name: '', owner_name: '', phone: '', alt_phone: '',
+        id: '', firm_name: '', owner_name: '', phone: '', alt_phone: '',
         address: '', state: '', district: '', area_id: '', is_new_area: false, gst_number: '', credit_limit: '',
     });
 
@@ -112,13 +114,31 @@ export default function RetailersList() {
             const gps = await getGPSLocation();
             const payload = {
                 ...form,
-                address: [form.address, form.district, form.state].filter(Boolean).join(', '),
                 latitude: gps.latitude,
                 longitude: gps.longitude
             };
             delete payload.is_new_area;
-            await api.post('/retailers', payload);
-            setSuccess(gps.latitude ? '✅ Party added successfully with GPS!' : '✅ Party added successfully!');
+            
+            if (form.id) {
+                // UPDATE
+                if (isBillOperator && !canEdit) {
+                    // Bill operator - submit request
+                    await api.post('/retailers/edit-request', {
+                        retailer_id: form.id,
+                        proposed_data: payload
+                    });
+                    setSuccess('✅ Edit request submitted for admin approval!');
+                } else {
+                    // Admin/Store Incharge - direct update
+                    await api.patch(`/retailers/${form.id}`, payload);
+                    setSuccess('✅ Party updated successfully!');
+                }
+            } else {
+                // CREATE
+                await api.post('/retailers', payload);
+                setSuccess(gps.latitude ? '✅ Party added successfully with GPS!' : '✅ Party added successfully!');
+            }
+            
             setShowForm(false);
             resetForm();
             load(search);
@@ -126,6 +146,25 @@ export default function RetailersList() {
         } catch (err) {
             setError(err.response?.data?.error || 'Failed to save.');
         } finally { setSaving(false); }
+    };
+
+    const startEdit = (r) => {
+        setForm({
+            id: r.id,
+            firm_name: r.firm_name || '',
+            owner_name: r.owner_name || '',
+            phone: r.phone || '',
+            alt_phone: r.alt_phone || '',
+            address: r.address || '',
+            state: r.address?.split(', ').pop() || '', 
+            district: r.address?.split(', ').slice(-2, -1)[0] || '',
+            area_id: r.area_id || '',
+            gst_number: r.gst_number || '',
+            credit_limit: r.credit_limit || '',
+            is_new_area: false
+        });
+        setShowForm(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const filteredRetailers = retailers.filter(r => {
@@ -178,10 +217,17 @@ export default function RetailersList() {
                 </div>
             </div>
 
-            {/* ── Add Form ── */}
+            {/* ── Add/Edit Form ── */}
             {showForm && (
                 <form onSubmit={handleSave} className="mx-4 mb-3 card space-y-3 border-brand-200">
-                    <h2 className="font-semibold text-gray-700">New Party / Retailer</h2>
+                    <h2 className="font-semibold text-gray-700">
+                        {form.id ? 'Edit Party' : 'New Party / Retailer'}
+                    </h2>
+                    {isBillOperator && !canEdit && form.id && (
+                        <div className="bg-amber-50 border border-amber-200 p-2 rounded-lg text-amber-700 text-xs flex items-start gap-2">
+                            <span>ℹ️</span> Changes will be submitted for Admin approval.
+                        </div>
+                    )}
                     {error && <p className="text-red-600 text-sm p-2 bg-red-50 rounded-lg">{error}</p>}
 
                     <div>
@@ -285,8 +331,13 @@ export default function RetailersList() {
                     </div>
 
                     <button type="submit" className="btn-primary" disabled={saving}>
-                        {saving ? 'Saving…' : '✅ Add Party'}
+                        {saving ? 'Saving…' : form.id ? '💾 Save Changes' : '✅ Add Party'}
                     </button>
+                    {form.id && (
+                        <button type="button" onClick={() => { setShowForm(false); resetForm(); }} className="w-full py-2 text-sm text-gray-500 font-medium">
+                            Cancel
+                        </button>
+                    )}
                 </form>
             )}
 
@@ -312,11 +363,21 @@ export default function RetailersList() {
                                 </p>
                                 {r.phone && <p className="text-xs text-gray-400 mt-0.5">📞 {r.phone}</p>}
                             </div>
-                            <div className="text-right shrink-0">
-                                <p className="text-[10px] text-gray-400">Outstanding</p>
-                                <p className={`font-bold text-sm ${parseFloat(r.outstanding) > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                    ₹{parseFloat(r.outstanding || 0).toLocaleString('en-IN')}
-                                </p>
+                            <div className="text-right shrink-0 flex flex-col items-end gap-2">
+                                <div>
+                                    <p className="text-[10px] text-gray-400">Outstanding</p>
+                                    <p className={`font-bold text-sm ${parseFloat(r.outstanding) > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                        ₹{parseFloat(r.outstanding || 0).toLocaleString('en-IN')}
+                                    </p>
+                                </div>
+                                {canRequestEdit && (
+                                    <button 
+                                        onClick={() => startEdit(r)}
+                                        className="text-[10px] bg-brand-50 text-brand-600 px-2 py-1 rounded border border-brand-100 font-bold"
+                                    >
+                                        ✏️ Edit
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
