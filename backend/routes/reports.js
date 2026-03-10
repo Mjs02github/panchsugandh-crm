@@ -510,18 +510,18 @@ router.get('/gst-data', auth, allowRoles(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.B
             [from, to]
         );
 
-        if (req.query.format === 'json') {
-            return res.json({ data: rows, from, to });
+        if (req.query.format === 'excel') {
+            const workbook = new ExcelJS.Workbook();
+            const sheet = workbook.addWorksheet('GST Data');
+            if (rows.length > 0) {
+                sheet.columns = Object.keys(rows[0]).map(key => ({ header: key, key, width: 22 }));
+                styleHeaderRow(sheet, sheet.getRow(1));
+                rows.forEach(row => { sheet.addRow(Object.values(row)).height = 18; });
+            }
+            return sendExcel(res, workbook, `GST_Data_${from}_to_${to}.xlsx`);
         }
 
-        const workbook = new ExcelJS.Workbook();
-        const sheet = workbook.addWorksheet('GST Data');
-        if (rows.length > 0) {
-            sheet.columns = Object.keys(rows[0]).map(key => ({ header: key, key, width: 22 }));
-            styleHeaderRow(sheet, sheet.getRow(1));
-            rows.forEach(row => { sheet.addRow(Object.values(row)).height = 18; });
-        }
-        return sendExcel(res, workbook, `GST_Data_${from}_to_${to}.xlsx`);
+        res.json({ data: rows, from, to });
     } catch (err) {
         console.error('GST data export error:', err);
         res.status(500).json({ error: 'Server error.' });

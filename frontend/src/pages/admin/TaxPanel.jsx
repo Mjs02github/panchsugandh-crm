@@ -14,17 +14,18 @@ export default function TaxPanel() {
         setLoading(true);
         try {
             const res = await api.get('/reports/gst-data', { params: range });
-            const data = res.data.data;
-            setSummary(data);
+            const rows = res.data.data || [];
+            setSummary(rows);
             
-            const s = data.reduce((acc, curr) => ({
-                taxable: acc.taxable + parseFloat(curr['Taxable Value']),
-                gst: acc.gst + parseFloat(curr['GST Amount']),
-                total: acc.total + parseFloat(curr['Invoice Value'])
+            const s = rows.reduce((acc, curr) => ({
+                taxable: acc.taxable + parseFloat(curr['Taxable Value'] || 0),
+                gst: acc.gst + parseFloat(curr['GST Amount'] || 0),
+                total: acc.total + parseFloat(curr['Invoice Value'] || 0)
             }), { taxable: 0, gst: 0, total: 0 });
             setStats(s);
         } catch (err) {
-            console.error('Failed to load GST data');
+            console.error('Failed to load GST data', err);
+            setSummary([]);
         } finally {
             setLoading(false);
         }
