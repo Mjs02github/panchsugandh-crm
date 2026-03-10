@@ -3,7 +3,7 @@ const axios = require('axios');
 async function testGST(gstin) {
     console.log(`Testing GSTIN: ${gstin}`);
     const urls = [
-        `https://blog-backend.mastersindia.co/api/v1/custom/search/gstin/?keyword=${gstin}`
+        `https://blog-backend.mastersindia.co/api/v1/custom/search/gstin/?keyword=${gstin}&unique_id=nwSEqZtTbMwWnFflshUXcGT6e6sOdi`
     ];
 
     for (const url of urls) {

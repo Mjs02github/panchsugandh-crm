@@ -125,21 +125,32 @@ router.get('/gst-lookup/:gstin', auth, async (req, res) => {
             return res.status(400).json({ error: 'Invalid GSTIN length.' });
         }
 
-        const url = `https://blog-backend.mastersindia.co/api/v1/custom/search/gstin/?keyword=${gstin.toUpperCase()}`;
+        const headers = {
+            'authority': 'blog-backend.mastersindia.co',
+            'accept': 'application/json, text/plain, */*',
+            'accept-language': 'en-US,en;q=0.9',
+            'origin': 'https://www.mastersindia.co',
+            'referer': 'https://www.mastersindia.co/',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
+        };
+
+        // 1. Try to fetch a fresh unique_id from the landing page
+        let uniqueId = 'nwSEqZtTbMwWnFflshUXcGT6e6sOdi'; // Default fallback
+        try {
+            const landingPage = await axios.get('https://www.mastersindia.co/gst-number-search-and-gstin-verification/', { headers });
+            const match = landingPage.data.match(/"unique_id":"([^"]+)"/);
+            if (match) uniqueId = match[1];
+        } catch (e) {
+            console.warn('Failed to fetch fresh unique_id, using fallback');
+        }
+
+        // 2. Perform the lookup
+        const url = `https://blog-backend.mastersindia.co/api/v1/custom/search/gstin/?keyword=${gstin.toUpperCase()}&unique_id=${uniqueId}`;
         
-        const response = await axios.get(url, {
-            headers: {
-                'authority': 'blog-backend.mastersindia.co',
-                'accept': 'application/json, text/plain, */*',
-                'origin': 'https://www.mastersindia.co',
-                'referer': 'https://www.mastersindia.co/',
-                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
-            },
-            timeout: 10000
-        });
+        const response = await axios.get(url, { headers, timeout: 10000 });
         
         const result = response.data;
-        if (!result || !result.success || !result.data) {
+        if (!result || !result.success || !result.data || !result.data.lgnm) {
             return res.status(404).json({ error: 'GSTIN details not found or service unavailable.' });
         }
 
@@ -153,7 +164,7 @@ router.get('/gst-lookup/:gstin', auth, async (req, res) => {
             addr.loc, 
             addr.dst, 
             tp.pradr?.ntr // Nature of business activity
-        ].filter(p => p && p !== 'null' && p !== 'undefined');
+        ].filter(p => p && p !== 'null' && p !== 'undefined' && p !== '');
 
         res.json({
             firm_name: tp.tradeNam || tp.lgnm || '',
