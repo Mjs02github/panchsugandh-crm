@@ -17,11 +17,11 @@ router.get('/vendors', async (req, res) => {
 });
 
 router.post('/vendors', async (req, res) => {
-    const { name, contact_person, phone, email, address, gstin, category, status } = req.body;
+    const { name, contact_person, phone, email, address, gstin, category, material_names, status } = req.body;
     try {
         const [result] = await db.query(
-            'INSERT INTO vendors (name, contact_person, phone, email, address, gstin, category, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            [name, contact_person, phone, email, address, gstin, category, status || 'ACTIVE']
+            'INSERT INTO vendors (name, contact_person, phone, email, address, gstin, category, material_names, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [name, contact_person, phone, email, address, gstin, category, material_names || null, status || 'ACTIVE']
         );
         res.status(201).json({ id: result.insertId, message: 'Vendor added' });
     } catch (error) {
@@ -30,11 +30,11 @@ router.post('/vendors', async (req, res) => {
 });
 
 router.put('/vendors/:id', async (req, res) => {
-    const { name, contact_person, phone, email, address, gstin, category, status } = req.body;
+    const { name, contact_person, phone, email, address, gstin, category, material_names, status } = req.body;
     try {
         await db.query(
-            'UPDATE vendors SET name=?, contact_person=?, phone=?, email=?, address=?, gstin=?, category=?, status=? WHERE id=?',
-            [name, contact_person, phone, email, address, gstin, category, status, req.params.id]
+            'UPDATE vendors SET name=?, contact_person=?, phone=?, email=?, address=?, gstin=?, category=?, material_names=?, status=? WHERE id=?',
+            [name, contact_person, phone, email, address, gstin, category, material_names, status, req.params.id]
         );
         res.json({ message: 'Vendor updated' });
     } catch (error) {

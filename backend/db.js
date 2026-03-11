@@ -237,6 +237,7 @@ pool.getConnection(async (err, conn) => {
                     address        TEXT,
                     gstin          VARCHAR(20),
                     category       VARCHAR(100), -- Type of materials supplied
+                    material_names TEXT,         -- Specific items supplied
                     status         ENUM('ACTIVE', 'POTENTIAL') DEFAULT 'ACTIVE',
                     created_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
                     updated_at     DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -257,6 +258,17 @@ pool.getConnection(async (err, conn) => {
             console.log(`✅ Procurement tables verified (Vendors & Plans ready)`);
         } catch (procErr) {
             console.error('❌ Failed to run Procurement migration:', procErr.message);
+        }
+
+        // Auto-migrate: Add material_names to vendors if missing
+        try {
+            const [cols] = await conn.promise().query("SHOW COLUMNS FROM vendors LIKE 'material_names'");
+            if (cols.length === 0) {
+                await conn.promise().query("ALTER TABLE vendors ADD COLUMN material_names TEXT NULL AFTER category");
+                console.log(`✅ vendors table updated with material_names`);
+            }
+        } catch (tableErr) {
+            console.warn('⚠️ Vendor material_names migration skipped or failed:', tableErr.message);
         }
 
         // Auto-migrate: Material Requests (Store -> Procurement channel)

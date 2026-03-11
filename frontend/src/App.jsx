@@ -151,7 +151,7 @@ export default function App() {
             <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin', 'bill_operator']}><AdaptiveLayout><ProductsList /></AdaptiveLayout></ProtectedRoute>
           } />
           <Route path="/store/raw-materials" element={
-            <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin']}><AdaptiveLayout><RawMaterials /></AdaptiveLayout></ProtectedRoute>
+            <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin', 'procurement']}><AdaptiveLayout><RawMaterials /></AdaptiveLayout></ProtectedRoute>
           } />
           <Route path="/store/bom" element={
             <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin']}><AdaptiveLayout><BOMManager /></AdaptiveLayout></ProtectedRoute>
@@ -191,7 +191,7 @@ export default function App() {
             <ProtectedRoute roles={['admin', 'super_admin']}><AdaptiveLayout><Approvals /></AdaptiveLayout></ProtectedRoute>
           } />
           <Route path="/chat" element={
-            <ProtectedRoute roles={['admin', 'super_admin', 'sales_officer', 'salesperson', 'bill_operator', 'delivery_incharge', 'store_incharge']}><AdaptiveLayout><Chat /></AdaptiveLayout></ProtectedRoute>
+            <ProtectedRoute roles={['admin', 'super_admin', 'sales_officer', 'salesperson', 'bill_operator', 'delivery_incharge', 'store_incharge', 'procurement']}><AdaptiveLayout><Chat /></AdaptiveLayout></ProtectedRoute>
           } />
 
           <Route path="/invoice/print" element={<PrintInvoice />} />

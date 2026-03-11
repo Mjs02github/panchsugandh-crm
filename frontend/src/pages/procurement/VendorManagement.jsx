@@ -11,7 +11,7 @@ export default function VendorManagement() {
     const [editingVendor, setEditingVendor] = useState(null);
     const [formData, setFormData] = useState({
         name: '', contact_person: '', phone: '', email: '', 
-        address: '', gstin: '', category: '', status: 'ACTIVE'
+        address: '', gstin: '', category: '', material_names: '', status: 'ACTIVE'
     });
 
     useEffect(() => {
@@ -39,7 +39,7 @@ export default function VendorManagement() {
             }
             setShowModal(false);
             setEditingVendor(null);
-            setFormData({ name: '', contact_person: '', phone: '', email: '', address: '', gstin: '', category: '', status: 'ACTIVE' });
+            setFormData({ name: '', contact_person: '', phone: '', email: '', address: '', gstin: '', category: '', material_names: '', status: 'ACTIVE' });
             fetchVendors();
         } catch (error) {
             alert('Error saving vendor: ' + error.message);
@@ -64,7 +64,8 @@ export default function VendorManagement() {
 
     const filteredVendors = vendors.filter(v => {
         const matchesSearch = v.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                             (v.category && v.category.toLowerCase().includes(searchTerm.toLowerCase()));
+                             (v.category && v.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                             (v.material_names && v.material_names.toLowerCase().includes(searchTerm.toLowerCase()));
         const matchesStatus = filterStatus === 'ALL' || v.status === filterStatus;
         return matchesSearch && matchesStatus;
     });
@@ -72,17 +73,35 @@ export default function VendorManagement() {
     return (
         <div className="p-4 sm:p-6 space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-800">Vendor Management</h1>
-                    <p className="text-gray-500 text-sm">Manage suppliers and potential vendors</p>
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => window.history.back()}
+                        className="text-gray-500 hover:text-gray-700 bg-white border border-gray-200 p-2 rounded-lg"
+                    >
+                        ←
+                    </button>
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-800">Vendor Management</h1>
+                        <p className="text-gray-500 text-sm">Manage suppliers and potential vendors</p>
+                    </div>
                 </div>
-                <button 
-                    onClick={() => { setEditingVendor(null); setFormData({ name: '', contact_person: '', phone: '', email: '', address: '', gstin: '', category: '', status: 'ACTIVE' }); setShowModal(true); }}
-                    className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
-                >
-                    <UserPlus size={18} />
-                    Add Vendor
-                </button>
+                <div className="flex gap-2">
+                    <button 
+                        onClick={() => { setEditingVendor(null); setFormData({ name: '', contact_person: '', phone: '', email: '', address: '', gstin: '', category: '', material_names: '', status: 'ACTIVE' }); setShowModal(true); }}
+                        className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
+                    >
+                        <UserPlus size={18} />
+                        Add Vendor
+                    </button>
+                </div>
+            </div>
+
+            {/* Sub-Nav */}
+            <div className="flex gap-4 border-b border-gray-200 -mt-2 pb-0">
+                <a href="#/procurement" className="px-1 py-2 text-sm text-gray-500 hover:text-indigo-600">Dashboard</a>
+                <a href="#/procurement/vendors" className="px-1 py-2 text-sm font-bold text-indigo-600 border-b-2 border-indigo-600">Vendors</a>
+                <a href="#/procurement/planning" className="px-1 py-2 text-sm text-gray-500 hover:text-indigo-600">Planning</a>
+                <a href="#/procurement/requests" className="px-1 py-2 text-sm text-gray-500 hover:text-indigo-600">Store Req</a>
             </div>
 
             {/* Filters */}
@@ -120,12 +139,19 @@ export default function VendorManagement() {
                             <div className="flex justify-between items-start mb-4">
                                 <div>
                                     <h3 className="text-lg font-bold text-gray-800">{vendor.name}</h3>
-                                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 uppercase">
-                                        {vendor.category || 'General'}
-                                    </span>
+                                    <div className="flex gap-1 flex-wrap mt-1">
+                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-600 uppercase border border-indigo-100">
+                                            {vendor.category || 'General'}
+                                        </span>
+                                        {vendor.material_names && (
+                                            <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-100 italic">
+                                                {vendor.material_names}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
-                                <span className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${vendor.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                                    {vendor.status === 'ACTIVE' ? <CheckCircle size={12} /> : <Clock size={12} />}
+                                <span className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${vendor.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                                    {vendor.status === 'ACTIVE' ? <CheckCircle size={10} /> : <Clock size={10} />}
                                     {vendor.status}
                                 </span>
                             </div>
@@ -199,6 +225,11 @@ export default function VendorManagement() {
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">GSTIN</label>
                                     <input type="text" value={formData.gstin} onChange={e => setFormData({ ...formData, gstin: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1 font-bold text-indigo-700">Supplied Material Names</label>
+                                    <input type="text" placeholder="e.g. HDPE Bags, Paraffin Oil, Cartons" value={formData.material_names || ''} onChange={e => setFormData({ ...formData, material_names: e.target.value })} className="w-full px-4 py-2 border-2 border-indigo-100 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
+                                    <p className="text-[10px] text-gray-400 mt-1 italic">Enter specific materials supplied by this vendor</p>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
