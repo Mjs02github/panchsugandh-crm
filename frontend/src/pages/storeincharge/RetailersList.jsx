@@ -112,11 +112,21 @@ export default function RetailersList() {
         setError(''); setSaving(true);
         try {
             const gps = await getGPSLocation();
+            
+            // Combine address parts into a single string for the database
+            const fullAddress = [form.address, form.district, form.state].filter(Boolean).join(', ');
+
             const payload = {
                 ...form,
+                address: fullAddress,
                 latitude: gps.latitude,
                 longitude: gps.longitude
             };
+
+            // Remove internal UI fields that don't belong in the Retailers table
+            delete payload.id;
+            delete payload.state;
+            delete payload.district;
             delete payload.is_new_area;
             
             if (form.id) {
@@ -148,16 +158,44 @@ export default function RetailersList() {
         } finally { setSaving(false); }
     };
 
+    const handleUpdateGPS = async (r) => {
+        if (!window.confirm(`Update GPS location for ${r.firm_name}? This will use your current location.`)) return;
+        setSaving(true);
+        try {
+            const gps = await getGPSLocation();
+            if (!gps.latitude) {
+                setError('Failed to capture GPS. Please ensure location permissions are granted.');
+                return;
+            }
+            await api.patch(`/retailers/${r.id}`, {
+                latitude: gps.latitude,
+                longitude: gps.longitude
+            });
+            setSuccess('📍 Retailer location updated successfully!');
+            load(search);
+            setTimeout(() => setSuccess(''), 3000);
+        } catch (err) {
+            setError('Failed to update GPS.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const startEdit = (r) => {
+        const addrParts = (r.address || '').split(', ');
+        const state = addrParts.length >= 2 ? addrParts[addrParts.length - 1] : '';
+        const district = addrParts.length >= 3 ? addrParts[addrParts.length - 2] : '';
+        const street = addrParts.length >= 3 ? addrParts.slice(0, -2).join(', ') : r.address;
+
         setForm({
             id: r.id,
             firm_name: r.firm_name || '',
             owner_name: r.owner_name || '',
             phone: r.phone || '',
             alt_phone: r.alt_phone || '',
-            address: r.address || '',
-            state: r.address?.split(', ').pop() || '', 
-            district: r.address?.split(', ').slice(-2, -1)[0] || '',
+            address: street || '',
+            state: state || '', 
+            district: district || '',
             area_id: r.area_id || '',
             gst_number: r.gst_number || '',
             credit_limit: r.credit_limit || '',
@@ -357,11 +395,23 @@ export default function RetailersList() {
                     <div key={r.id} className="card">
                         <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-gray-800 truncate">{r.firm_name}</p>
+                                <p className="font-semibold text-gray-800 truncate flex items-center gap-2">
+                                    {r.firm_name}
+                                    {(!r.latitude || !r.longitude) && (
+                                        <span className="bg-red-50 text-red-600 text-[9px] px-1.5 py-0.5 rounded-full border border-red-100 font-bold whitespace-nowrap">
+                                            📍 Location Missing
+                                        </span>
+                                    )}
+                                </p>
                                 <p className="text-xs text-gray-500">
                                     {r.owner_name || '—'} · {r.area_name || 'No area'}
                                 </p>
-                                {r.phone && <p className="text-xs text-gray-400 mt-0.5">📞 {r.phone}</p>}
+                                {r.phone && <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+                                    <span>📞</span> {r.phone}
+                                    {r.latitude && r.longitude && (
+                                        <span className="text-[9px] text-green-600 font-medium ml-2">📍 GPS Saved</span>
+                                    )}
+                                </p>}
                             </div>
                             <div className="text-right shrink-0 flex flex-col items-end gap-2">
                                 <div>
@@ -370,14 +420,24 @@ export default function RetailersList() {
                                         ₹{parseFloat(r.outstanding || 0).toLocaleString('en-IN')}
                                     </p>
                                 </div>
-                                {canRequestEdit && (
-                                    <button 
-                                        onClick={() => startEdit(r)}
-                                        className="text-[10px] bg-brand-50 text-brand-600 px-2 py-1 rounded border border-brand-100 font-bold"
-                                    >
-                                        ✏️ Edit
-                                    </button>
-                                )}
+                                <div className="flex gap-1.5">
+                                    {(!r.latitude || !r.longitude) && ['salesperson', 'sales_officer'].includes(user?.role) && (
+                                        <button 
+                                            onClick={() => handleUpdateGPS(r)}
+                                            className="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-100 font-bold"
+                                        >
+                                            📍 Set Loc
+                                        </button>
+                                    )}
+                                    {canRequestEdit && (
+                                        <button 
+                                            onClick={() => startEdit(r)}
+                                            className="text-[10px] bg-brand-50 text-brand-600 px-2 py-1 rounded border border-brand-100 font-bold"
+                                        >
+                                            ✏️ Edit
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>

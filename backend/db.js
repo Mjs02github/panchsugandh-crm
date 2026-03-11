@@ -224,6 +224,65 @@ pool.getConnection(async (err, conn) => {
             console.error('❌ Failed to run Store Management migration:', prodErr.message);
         }
 
+        // Auto-migrate: Procurement Module (Vendors & Plans)
+        try {
+            // 1. Vendors table
+            await conn.promise().query(`
+                CREATE TABLE IF NOT EXISTS vendors (
+                    id             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    name           VARCHAR(255) NOT NULL,
+                    contact_person VARCHAR(150),
+                    phone          VARCHAR(20),
+                    email          VARCHAR(150),
+                    address        TEXT,
+                    gstin          VARCHAR(20),
+                    category       VARCHAR(100), -- Type of materials supplied
+                    status         ENUM('ACTIVE', 'POTENTIAL') DEFAULT 'ACTIVE',
+                    created_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at     DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                )
+            `);
+
+            // 2. Procurement Plans (History of calculations)
+            await conn.promise().query(`
+                CREATE TABLE IF NOT EXISTS procurement_plans (
+                    id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    target_data JSON NOT NULL, -- [{productId, name, quantity}]
+                    result_data JSON NOT NULL, -- [{materialId, name, requiredQty, currentQty}]
+                    created_by  INT UNSIGNED,
+                    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT fk_proc_user FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+                )
+            `);
+            console.log(`✅ Procurement tables verified (Vendors & Plans ready)`);
+        } catch (procErr) {
+            console.error('❌ Failed to run Procurement migration:', procErr.message);
+        }
+
+        // Auto-migrate: Material Requests (Store -> Procurement channel)
+        try {
+            await conn.promise().query(`
+                CREATE TABLE IF NOT EXISTS material_requests (
+                    id             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    item_name      VARCHAR(255) NOT NULL,
+                    material_id    INT UNSIGNED NULL, -- Link if existing RM
+                    quantity       DECIMAL(12,3) NOT NULL,
+                    unit           VARCHAR(20) NOT NULL,
+                    priority       ENUM('LOW', 'MEDIUM', 'HIGH', 'URGENT') DEFAULT 'MEDIUM',
+                    status         ENUM('PENDING', 'APPROVED', 'PURCHASED', 'RECEIVED', 'CANCELLED') DEFAULT 'PENDING',
+                    requested_by   INT UNSIGNED NOT NULL,
+                    notes          TEXT,
+                    created_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at     DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    CONSTRAINT fk_mat_req_user FOREIGN KEY (requested_by) REFERENCES users(id),
+                    CONSTRAINT fk_mat_req_rm   FOREIGN KEY (material_id) REFERENCES raw_materials(id) ON DELETE SET NULL
+                )
+            `);
+            console.log(`✅ material_requests table verified (Store-Procurement channel ready)`);
+        } catch (matReqErr) {
+            console.error('❌ Failed to run Material Request migration:', matReqErr.message);
+        }
+
         // Auto-migrate: Party Edit Approval Workflow
         try {
             await conn.promise().query(`

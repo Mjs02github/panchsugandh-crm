@@ -11,9 +11,10 @@ const ROLE_DISPLAY = {
     bill_operator: { label: 'Bill Operator', badge: 'bg-yellow-100 text-yellow-700' },
     delivery_incharge: { label: 'Delivery In-charge', badge: 'bg-green-100 text-green-700' },
     store_incharge: { label: 'Store In-charge', badge: 'bg-teal-100 text-teal-700' },
+    procurement: { label: 'Procurement', badge: 'bg-indigo-100 text-indigo-700' },
 };
 
-const ROLE_ORDER = ['super_admin', 'admin', 'sales_officer', 'salesperson', 'bill_operator', 'delivery_incharge', 'store_incharge'];
+const ROLE_ORDER = ['super_admin', 'admin', 'sales_officer', 'procurement', 'salesperson', 'bill_operator', 'delivery_incharge', 'store_incharge'];
 
 function RoleBadge({ role }) {
     const r = ROLE_DISPLAY[role] || { label: role, badge: 'bg-gray-100 text-gray-600' };

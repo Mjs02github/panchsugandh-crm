@@ -38,6 +38,14 @@ import AttendanceReport from './pages/admin/AttendanceReport';
 import Reports from './pages/admin/Reports';
 import TaxPanel from './pages/admin/TaxPanel';
 import Approvals from './pages/admin/Approvals';
+import MaterialMIS from './pages/store/MaterialMIS';
+import SalesMIS from './pages/store/SalesMIS';
+import ProcurementDashboard from './pages/procurement/ProcurementDashboard';
+import VendorManagement from './pages/procurement/VendorManagement';
+import MaterialPlanning from './pages/procurement/MaterialPlanning';
+import RequestManagement from './pages/procurement/RequestManagement';
+import MaterialRequests from './pages/storeincharge/MaterialRequests';
+import AppLayout from './components/layouts/AppLayout';
 import Chat from './pages/Chat';
 
 // Store Management (New Production System)
@@ -57,6 +65,7 @@ function RoleRouter() {
     delivery_incharge: '/delivery',
     store_incharge: '/store',
     sales_officer: '/team',
+    procurement: '/procurement',
     admin: '/dashboard',
     super_admin: '/dashboard',
   };
@@ -153,6 +162,9 @@ export default function App() {
           <Route path="/store/production" element={
             <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin']}><AdaptiveLayout><ProductionEntry /></AdaptiveLayout></ProtectedRoute>
           } />
+          <Route path="/store/requests" element={
+            <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin']}><AdaptiveLayout><MaterialRequests /></AdaptiveLayout></ProtectedRoute>
+          } />
           <Route path="/store/samples" element={
             <ProtectedRoute roles={['store_incharge', 'admin', 'super_admin', 'bill_operator']}><AdaptiveLayout><SampleManagement /></AdaptiveLayout></ProtectedRoute>
           } />
@@ -186,6 +198,12 @@ export default function App() {
           } />
 
           <Route path="/invoice/print" element={<PrintInvoice />} />
+          {/* Procurement Routes */}
+          <Route path="/procurement" element={<ProtectedRoute allowedRoles={['admin', 'super_admin', 'procurement']}><ProcurementDashboard /></ProtectedRoute>} />
+          <Route path="/procurement/vendors" element={<ProtectedRoute allowedRoles={['admin', 'super_admin', 'procurement']}><VendorManagement /></ProtectedRoute>} />
+          <Route path="/procurement/planning" element={<ProtectedRoute allowedRoles={['admin', 'super_admin', 'procurement']}><MaterialPlanning /></ProtectedRoute>} />
+          <Route path="/procurement/requests" element={<ProtectedRoute allowedRoles={['admin', 'super_admin', 'procurement']}><RequestManagement /></ProtectedRoute>} />
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </HashRouter>

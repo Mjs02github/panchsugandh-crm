@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { 
   CheckCircle, 
   XCircle, 
@@ -23,7 +23,7 @@ const Approvals = () => {
 
     const fetchRequests = async () => {
         try {
-            const res = await axios.get('/api/retailers/edit-requests?status=PENDING');
+            const res = await api.get('/retailers/edit-requests?status=PENDING');
             setRequests(res.data);
         } catch (err) {
             console.error('Error fetching requests:', err);
@@ -43,7 +43,7 @@ const Approvals = () => {
         
         setProcessingId(id);
         try {
-            await axios.post(`/api/retailers/edit-requests/${id}/process`, {
+            await api.post(`/retailers/edit-requests/${id}/process`, {
                 status,
                 admin_remark: remark
             });
