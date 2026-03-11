@@ -307,6 +307,14 @@ pool.getConnection(async (err, conn) => {
             console.error('❌ Failed to run party edit migration:', editErr.message);
         }
 
+        // Auto-migrate: Ensure procurement role exists
+        try {
+            await conn.promise().query("INSERT IGNORE INTO roles (name) VALUES ('procurement')");
+            console.log(`✅ procurement role verified in roles table`);
+        } catch (roleErr) {
+            console.error('❌ Failed to insert procurement role:', roleErr.message);
+        }
+
         conn.release();
     }
 });

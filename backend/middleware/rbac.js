@@ -25,4 +25,5 @@ module.exports.ROLES = {
     BILL_OPERATOR: 'bill_operator',
     DELIVERY_INCHARGE: 'delivery_incharge',
     STORE_INCHARGE: 'store_incharge',
+    PROCUREMENT: 'procurement',
 };
