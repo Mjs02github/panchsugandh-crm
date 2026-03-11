@@ -47,7 +47,7 @@ router.post('/login', async (req, res) => {
         };
 
         const token = jwt.sign(payload, process.env.JWT_SECRET || 'panchsugandh_fallback_secret_123', {
-            expiresIn: process.env.JWT_EXPIRES_IN || '8h',
+            expiresIn: process.env.JWT_EXPIRES_IN || '10h',
         });
 
         res.json({

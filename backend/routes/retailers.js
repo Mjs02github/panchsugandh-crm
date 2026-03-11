@@ -31,7 +31,7 @@ router.get('/', auth, async (req, res) => {
         const [rows] = await db.query(
             `SELECT r.id, r.firm_name, r.owner_name, r.phone, r.address,
               r.credit_limit, r.outstanding, r.gst_number, r.area_id,
-              a.name AS area_name
+              r.latitude, r.longitude, a.name AS area_name
        FROM retailers r
        LEFT JOIN areas a ON r.area_id = a.id
        ${where}
@@ -259,12 +259,25 @@ router.post('/edit-requests/:id/process', auth, allowRoles(ROLES.ADMIN, ROLES.SU
         // 3. If APPROVED, update the retailer table
         if (status === 'APPROVED') {
             const proposedData = typeof request.proposed_data === 'string' ? JSON.parse(request.proposed_data) : request.proposed_data;
-            const fields = Object.keys(proposedData);
+            
+            // Whitelist valid columns in retailers table
+            const VALID_FIELDS = [
+                'firm_name', 'owner_name', 'phone', 'alt_phone', 'email', 
+                'address', 'area_id', 'gst_number', 'credit_limit', 
+                'latitude', 'longitude', 'is_active'
+            ];
+            
+            const updates = {};
+            VALID_FIELDS.forEach(f => {
+                if (proposedData[f] !== undefined) updates[f] = proposedData[f];
+            });
+
+            const fields = Object.keys(updates);
             if (fields.length > 0) {
                 const setClauses = fields.map(f => `${f} = ?`).join(', ');
                 await connection.query(
                     `UPDATE retailers SET ${setClauses} WHERE id = ?`,
-                    [...Object.values(proposedData), request.retailer_id]
+                    [...Object.values(updates), request.retailer_id]
                 );
             }
         }
