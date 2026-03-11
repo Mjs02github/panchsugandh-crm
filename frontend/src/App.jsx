@@ -38,8 +38,6 @@ import AttendanceReport from './pages/admin/AttendanceReport';
 import Reports from './pages/admin/Reports';
 import TaxPanel from './pages/admin/TaxPanel';
 import Approvals from './pages/admin/Approvals';
-import MaterialMIS from './pages/store/MaterialMIS';
-import SalesMIS from './pages/store/SalesMIS';
 import ProcurementDashboard from './pages/procurement/ProcurementDashboard';
 import VendorManagement from './pages/procurement/VendorManagement';
 import MaterialPlanning from './pages/procurement/MaterialPlanning';
