@@ -196,10 +196,10 @@ export default function App() {
 
           <Route path="/invoice/print" element={<PrintInvoice />} />
           {/* Procurement Routes */}
-          <Route path="/procurement" element={<ProtectedRoute roles={['admin', 'super_admin', 'procurement']}><ProcurementDashboard /></ProtectedRoute>} />
-          <Route path="/procurement/vendors" element={<ProtectedRoute roles={['admin', 'super_admin', 'procurement']}><VendorManagement /></ProtectedRoute>} />
-          <Route path="/procurement/planning" element={<ProtectedRoute roles={['admin', 'super_admin', 'procurement']}><MaterialPlanning /></ProtectedRoute>} />
-          <Route path="/procurement/requests" element={<ProtectedRoute roles={['admin', 'super_admin', 'procurement']}><RequestManagement /></ProtectedRoute>} />
+          <Route path="/procurement" element={<ProtectedRoute roles={['admin', 'super_admin', 'procurement']}><AdaptiveLayout><ProcurementDashboard /></AdaptiveLayout></ProtectedRoute>} />
+          <Route path="/procurement/vendors" element={<ProtectedRoute roles={['admin', 'super_admin', 'procurement']}><AdaptiveLayout><VendorManagement /></AdaptiveLayout></ProtectedRoute>} />
+          <Route path="/procurement/planning" element={<ProtectedRoute roles={['admin', 'super_admin', 'procurement']}><AdaptiveLayout><MaterialPlanning /></AdaptiveLayout></ProtectedRoute>} />
+          <Route path="/procurement/requests" element={<ProtectedRoute roles={['admin', 'super_admin', 'procurement']}><AdaptiveLayout><RequestManagement /></AdaptiveLayout></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

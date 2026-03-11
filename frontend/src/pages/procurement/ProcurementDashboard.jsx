@@ -61,14 +61,6 @@ export default function ProcurementDashboard() {
                 </div>
             </div>
 
-            {/* Sub-Nav */}
-            <div className="flex gap-4 border-b border-gray-200 -mt-2 pb-0">
-                <a href="#/procurement" className="px-1 py-2 text-sm font-bold text-indigo-600 border-b-2 border-indigo-600">Dashboard</a>
-                <a href="#/procurement/vendors" className="px-1 py-2 text-sm text-gray-500 hover:text-indigo-600">Vendors</a>
-                <a href="#/procurement/planning" className="px-1 py-2 text-sm text-gray-500 hover:text-indigo-600">Planning</a>
-                <a href="#/procurement/requests" className="px-1 py-2 text-sm text-gray-500 hover:text-indigo-600">Store Req</a>
-            </div>
-
             {/* Quick Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {cards.map((card, i) => (

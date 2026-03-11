@@ -80,29 +80,13 @@ export default function MaterialPlanning() {
     return (
         <div className="p-4 sm:p-6 space-y-6 max-w-5xl mx-auto">
             <div className="flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                    <button 
-                        onClick={() => window.history.back()}
-                        className="text-gray-500 hover:text-gray-700 bg-white border border-gray-200 p-2 rounded-lg"
-                    >
-                        ←
-                    </button>
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                            <ClipboardList className="text-indigo-600" />
-                            Material Planning
-                        </h1>
-                        <p className="text-gray-500 text-sm">Calculate Raw Material needs for production targets</p>
-                    </div>
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                        <ClipboardList className="text-indigo-600" />
+                        Material Planning
+                    </h1>
+                    <p className="text-gray-500 text-sm">Calculate Raw Material needs for production targets</p>
                 </div>
-            </div>
-
-            {/* Sub-Nav */}
-            <div className="flex gap-4 border-b border-gray-200 -mt-2 pb-0">
-                <a href="#/procurement" className="px-1 py-2 text-sm text-gray-500 hover:text-indigo-600">Dashboard</a>
-                <a href="#/procurement/vendors" className="px-1 py-2 text-sm text-gray-500 hover:text-indigo-600">Vendors</a>
-                <a href="#/procurement/planning" className="px-1 py-2 text-sm font-bold text-indigo-600 border-b-2 border-indigo-600">Planning</a>
-                <a href="#/procurement/requests" className="px-1 py-2 text-sm text-gray-500 hover:text-indigo-600">Store Req</a>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
