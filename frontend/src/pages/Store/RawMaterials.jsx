@@ -7,7 +7,7 @@ export default function RawMaterials() {
     const [showAddModal, setShowAddModal] = useState(false);
     const [showInwardModal, setShowInwardModal] = useState(false);
     const [selectedMaterial, setSelectedMaterial] = useState(null);
-    const [formData, setFormData] = useState({ name: '', sku: '', unit: 'PCS', min_stock: 0 });
+    const [formData, setFormData] = useState({ name: '', sku: '', unit: 'PCS', min_stock: 0, is_internal_mfg: false });
     const [inwardData, setInwardData] = useState({ quantity: '', entry_number: '', batch_number: '', received_date: new Date().toISOString().split('T')[0], supplier_info: '' });
 
     useEffect(() => {
@@ -31,7 +31,7 @@ export default function RawMaterials() {
             await api.post('/store/raw-materials', formData);
             setShowAddModal(false);
             fetchMaterials();
-            setFormData({ name: '', sku: '', unit: 'PCS', min_stock: 0 });
+            setFormData({ name: '', sku: '', unit: 'PCS', min_stock: 0, is_internal_mfg: false });
         } catch (err) {
             alert(err.response?.data?.error || 'Error adding material');
         }
@@ -50,6 +50,15 @@ export default function RawMaterials() {
             setInwardData({ quantity: '', entry_number: '', batch_number: '', received_date: new Date().toISOString().split('T')[0], supplier_info: '' });
         } catch (err) {
             alert(err.response?.data?.error || 'Error recording inward stock');
+        }
+    };
+
+    const toggleInternalMfg = async (id, currentStatus) => {
+        try {
+            await api.patch(`/store/raw-materials/${id}`, { is_internal_mfg: !currentStatus });
+            fetchMaterials();
+        } catch (err) {
+            alert('Error updating status');
         }
     };
 
@@ -77,6 +86,7 @@ export default function RawMaterials() {
                                 <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Unit</th>
                                 <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Stock</th>
                                 <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Min Stock</th>
+                                <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase text-center">In-House MFG</th>
                                 <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Actions</th>
                             </tr>
                         </thead>
@@ -90,6 +100,14 @@ export default function RawMaterials() {
                                         {parseFloat(m.qty_on_hand).toFixed(3)}
                                     </td>
                                     <td className="px-6 py-4 text-gray-500">{m.min_stock}</td>
+                                    <td className="px-6 py-4 text-center">
+                                        <button 
+                                            onClick={() => toggleInternalMfg(m.id, m.is_internal_mfg)}
+                                            className={`p-1 px-2 rounded-full text-[10px] font-bold transition ${m.is_internal_mfg ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' : 'bg-gray-100 text-gray-400 border border-gray-200'}`}
+                                        >
+                                            {m.is_internal_mfg ? 'FACTORY' : 'OFF'}
+                                        </button>
+                                    </td>
                                     <td className="px-6 py-4">
                                         <button
                                             onClick={() => { setSelectedMaterial(m); setShowInwardModal(true); }}
@@ -150,6 +168,15 @@ export default function RawMaterials() {
                                     onChange={e => setFormData({ ...formData, min_stock: e.target.value })}
                                     className="w-full border p-2 rounded-lg"
                                 />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox" id="is_internal_mfg"
+                                    checked={formData.is_internal_mfg}
+                                    onChange={e => setFormData({ ...formData, is_internal_mfg: e.target.checked })}
+                                    className="w-4 h-4 text-brand-600 rounded"
+                                />
+                                <label htmlFor="is_internal_mfg" className="text-sm font-medium text-gray-700">Manufactured In-House at Factory</label>
                             </div>
                             <div className="flex gap-3 pt-4">
                                 <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50">Cancel</button>

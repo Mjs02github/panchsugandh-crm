@@ -25,8 +25,8 @@ const NAV_CONFIG = {
     store_incharge: [
         { label: 'Store', icon: '🏠', path: '/store' },
         { label: 'Mfg Logs', icon: '🏭', path: '/manufacturing/logs' },
+        { label: 'Approvals', icon: '⚖️', path: '/manufacturing/approvals' },
         { label: 'Materials', icon: '🏗️', path: '/store/raw-materials' },
-        { label: 'Products', icon: '📦', path: '/store/products' },
         { label: 'Chat', icon: '💬', path: '/chat', badge: true },
     ],
     sales_officer: [

@@ -328,7 +328,15 @@ pool.getConnection(async (err, conn) => {
             console.error('❌ Failed to verify roles:', roleErr.message);
         }
 
-        // New Table: internal_production_logs
+        // Update: raw_materials to include is_internal_mfg
+        try {
+            await conn.promise().query("ALTER TABLE raw_materials ADD COLUMN IF NOT EXISTS is_internal_mfg BOOLEAN DEFAULT FALSE");
+            console.log(`✅ raw_materials table updated with is_internal_mfg`);
+        } catch (rmErr) {
+            console.error('❌ Failed to update raw_materials table:', rmErr.message);
+        }
+
+        // New Table / Update: internal_production_logs
         try {
             await conn.promise().query(`
                 CREATE TABLE IF NOT EXISTS internal_production_logs (
@@ -338,13 +346,25 @@ pool.getConnection(async (err, conn) => {
                     batch_number VARCHAR(50) NULL,
                     production_date DATE NOT NULL,
                     created_by INT UNSIGNED NOT NULL,
+                    status ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING',
+                    approved_by INT UNSIGNED NULL,
+                    approval_date DATETIME NULL,
+                    remark TEXT NULL,
                     notes TEXT NULL,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     CONSTRAINT fk_ipl_material FOREIGN KEY (material_id) REFERENCES raw_materials(id) ON DELETE CASCADE,
-                    CONSTRAINT fk_ipl_creator FOREIGN KEY (created_by) REFERENCES users(id)
+                    CONSTRAINT fk_ipl_creator FOREIGN KEY (created_by) REFERENCES users(id),
+                    CONSTRAINT fk_ipl_approver FOREIGN KEY (approved_by) REFERENCES users(id) ON DELETE SET NULL
                 )
             `);
-            console.log(`✅ internal_production_logs table verified`);
+            
+            // If table already existed, ensure new columns are there
+            await conn.promise().query("ALTER TABLE internal_production_logs ADD COLUMN IF NOT EXISTS status ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING'");
+            await conn.promise().query("ALTER TABLE internal_production_logs ADD COLUMN IF NOT EXISTS approved_by INT UNSIGNED NULL");
+            await conn.promise().query("ALTER TABLE internal_production_logs ADD COLUMN IF NOT EXISTS approval_date DATETIME NULL");
+            await conn.promise().query("ALTER TABLE internal_production_logs ADD COLUMN IF NOT EXISTS remark TEXT NULL");
+            
+            console.log(`✅ internal_production_logs table verified/updated`);
         } catch (logErr) {
             console.error('❌ Failed to run internal production migration:', logErr.message);
         }

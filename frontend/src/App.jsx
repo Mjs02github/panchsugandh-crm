@@ -50,8 +50,10 @@ import RawMaterials from './pages/Store/RawMaterials';
 import BOMManager from './pages/Store/BOMManager';
 import ProductionEntry from './pages/Store/ProductionEntry';
 import SampleManagement from './pages/Store/SampleManagement';
+import SampleManagement from './pages/Store/SampleManagement';
 import PrintInvoice from './pages/PrintInvoice';
 import ManufacturingDashboard from './pages/manufacturing/ManufacturingDashboard';
+import ManufacturingApprovals from './pages/manufacturing/ManufacturingApprovals';
 
 
 function RoleRouter() {
@@ -206,6 +208,7 @@ export default function App() {
           {/* Manufacturing Manager Routes */}
           <Route path="/manufacturing" element={<ProtectedRoute roles={['admin', 'super_admin', 'manufacturing_manager']}><AdaptiveLayout><ManufacturingDashboard /></AdaptiveLayout></ProtectedRoute>} />
           <Route path="/manufacturing/logs" element={<ProtectedRoute roles={['admin', 'super_admin', 'manufacturing_manager', 'store_incharge', 'procurement']}><AdaptiveLayout><ManufacturingDashboard /></AdaptiveLayout></ProtectedRoute>} />
+          <Route path="/manufacturing/approvals" element={<ProtectedRoute roles={['admin', 'super_admin', 'store_incharge']}><AdaptiveLayout><ManufacturingApprovals /></AdaptiveLayout></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

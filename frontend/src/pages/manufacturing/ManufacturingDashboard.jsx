@@ -143,7 +143,16 @@ export default function ManufacturingDashboard() {
                                 {logs.map(log => (
                                     <tr key={log.id} className="hover:bg-gray-50/50 transition">
                                         <td className="px-6 py-4">
-                                            <CheckCircle2 size={16} className="text-green-500" />
+                                            <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${
+                                                log.status === 'APPROVED' ? 'bg-green-100 text-green-700' :
+                                                log.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
+                                                'bg-amber-100 text-amber-700'
+                                            }`}>
+                                                {log.status}
+                                            </span>
+                                            {log.remark && log.status === 'REJECTED' && (
+                                                <p className="text-[10px] text-red-400 mt-1 italic">{log.remark}</p>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4">
                                             <p className="font-bold text-gray-800">{log.material_name}</p>
@@ -192,7 +201,7 @@ export default function ManufacturingDashboard() {
                                     className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
                                 >
                                     <option value="">Choose material...</option>
-                                    {materials.map(m => (
+                                    {materials.filter(m => m.is_internal_mfg).map(m => (
                                         <option key={m.id} value={m.id}>{m.name} ({m.qty_on_hand} {m.unit} on hand)</option>
                                     ))}
                                 </select>

@@ -4,6 +4,25 @@ const auth = require('../middleware/auth');
 const { allowRoles, ROLES } = require('../middleware/rbac');
 const router = express.Router();
 
+// PATCH /api/store/raw-materials/:id
+// Update raw material (e.g., toggle is_internal_mfg)
+router.patch('/raw-materials/:id', auth, allowRoles(ROLES.ADMIN, ROLES.STORE_INCHARGE, ROLES.SUPER_ADMIN), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updates = req.body;
+        
+        // Simple update logic for now
+        const setQuery = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+        const values = Object.values(updates);
+        
+        await db.query(`UPDATE raw_materials SET ${setQuery} WHERE id = ?`, [...values, id]);
+        res.json({ success: true, message: 'Raw material updated.' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // ==========================================
 // 1. RAW MATERIALS
 // ==========================================
