@@ -13,6 +13,7 @@ export default function VendorManagement() {
         name: '', contact_person: '', phone: '', email: '', 
         address: '', gstin: '', category: '', material_names: '', status: 'ACTIVE'
     });
+    const [fetchingGST, setFetchingGST] = useState(false);
 
     useEffect(() => {
         fetchVendors();
@@ -26,6 +27,29 @@ export default function VendorManagement() {
             console.error('Error fetching vendors:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleGSTLookup = async () => {
+        if (!formData.gstin || formData.gstin.length !== 15) {
+            alert('Please enter a valid 15-digit GST number first.');
+            return;
+        }
+        setFetchingGST(true);
+        try {
+            const res = await api.get(`/retailers/gst-lookup/${formData.gstin.toUpperCase()}`);
+            const data = res.data;
+            setFormData(f => ({
+                ...f,
+                name: data.firm_name || f.name,
+                contact_person: data.owner_name || f.contact_person,
+                address: data.address || f.address,
+            }));
+            alert('✅ Details fetched from GST records!');
+        } catch (err) {
+            alert(err.response?.data?.error || 'Failed to fetch GST details.');
+        } finally {
+            setFetchingGST(false);
         }
     };
 
@@ -207,8 +231,25 @@ export default function VendorManagement() {
                                     <textarea rows="2" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">GSTIN</label>
-                                    <input type="text" value={formData.gstin} onChange={e => setFormData({ ...formData, gstin: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
+                                    <label className="block text-sm font-medium text-gray-700 mb-1 text-indigo-600 font-bold italic">GSTIN (Optional)</label>
+                                    <div className="flex gap-2">
+                                        <input 
+                                            type="text" 
+                                            placeholder="e.g. 07AACCU3842M1ZP"
+                                            value={formData.gstin} 
+                                            onChange={e => setFormData({ ...formData, gstin: e.target.value.toUpperCase() })} 
+                                            className="flex-1 px-4 py-2 border-2 border-indigo-50 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" 
+                                        />
+                                        <button 
+                                            type="button"
+                                            onClick={handleGSTLookup}
+                                            disabled={fetchingGST}
+                                            className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg font-black border-2 border-indigo-100 hover:bg-indigo-100 transition disabled:opacity-50 flex items-center gap-1 shadow-sm"
+                                        >
+                                            {fetchingGST ? '⌛' : '🔍'} 
+                                            <span className="text-xs uppercase tracking-tighter">Fetch</span>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="col-span-2">
                                     <label className="block text-sm font-medium text-gray-700 mb-1 font-bold text-indigo-700">Supplied Material Names</label>
