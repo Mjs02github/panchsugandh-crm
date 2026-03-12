@@ -319,12 +319,34 @@ pool.getConnection(async (err, conn) => {
             console.error('❌ Failed to run party edit migration:', editErr.message);
         }
 
-        // Auto-migrate: Ensure procurement role exists
+        // Auto-migrate: Ensure procurement and manufacturing roles exist
         try {
             await conn.promise().query("INSERT IGNORE INTO roles (name) VALUES ('procurement')");
-            console.log(`✅ procurement role verified in roles table`);
+            await conn.promise().query("INSERT IGNORE INTO roles (name) VALUES ('manufacturing_manager')");
+            console.log(`✅ Roles verified in roles table`);
         } catch (roleErr) {
-            console.error('❌ Failed to insert procurement role:', roleErr.message);
+            console.error('❌ Failed to verify roles:', roleErr.message);
+        }
+
+        // New Table: internal_production_logs
+        try {
+            await conn.promise().query(`
+                CREATE TABLE IF NOT EXISTS internal_production_logs (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    material_id INT UNSIGNED NOT NULL,
+                    quantity DECIMAL(12,4) NOT NULL,
+                    batch_number VARCHAR(50) NULL,
+                    production_date DATE NOT NULL,
+                    created_by INT UNSIGNED NOT NULL,
+                    notes TEXT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT fk_ipl_material FOREIGN KEY (material_id) REFERENCES raw_materials(id) ON DELETE CASCADE,
+                    CONSTRAINT fk_ipl_creator FOREIGN KEY (created_by) REFERENCES users(id)
+                )
+            `);
+            console.log(`✅ internal_production_logs table verified`);
+        } catch (logErr) {
+            console.error('❌ Failed to run internal production migration:', logErr.message);
         }
 
         conn.release();

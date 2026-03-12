@@ -26,4 +26,5 @@ module.exports.ROLES = {
     DELIVERY_INCHARGE: 'delivery_incharge',
     STORE_INCHARGE: 'store_incharge',
     PROCUREMENT: 'procurement',
+    MANUFACTURING_MANAGER: 'manufacturing_manager',
 };

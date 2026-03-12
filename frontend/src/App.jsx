@@ -51,6 +51,7 @@ import BOMManager from './pages/Store/BOMManager';
 import ProductionEntry from './pages/Store/ProductionEntry';
 import SampleManagement from './pages/Store/SampleManagement';
 import PrintInvoice from './pages/PrintInvoice';
+import ManufacturingDashboard from './pages/manufacturing/ManufacturingDashboard';
 
 
 function RoleRouter() {
@@ -63,6 +64,7 @@ function RoleRouter() {
     store_incharge: '/store',
     sales_officer: '/team',
     procurement: '/procurement',
+    manufacturing_manager: '/manufacturing',
     admin: '/dashboard',
     super_admin: '/dashboard',
   };
@@ -200,6 +202,10 @@ export default function App() {
           <Route path="/procurement/vendors" element={<ProtectedRoute roles={['admin', 'super_admin', 'procurement']}><AdaptiveLayout><VendorManagement /></AdaptiveLayout></ProtectedRoute>} />
           <Route path="/procurement/planning" element={<ProtectedRoute roles={['admin', 'super_admin', 'procurement']}><AdaptiveLayout><MaterialPlanning /></AdaptiveLayout></ProtectedRoute>} />
           <Route path="/procurement/requests" element={<ProtectedRoute roles={['admin', 'super_admin', 'procurement']}><AdaptiveLayout><RequestManagement /></AdaptiveLayout></ProtectedRoute>} />
+            
+          {/* Manufacturing Manager Routes */}
+          <Route path="/manufacturing" element={<ProtectedRoute roles={['admin', 'super_admin', 'manufacturing_manager']}><AdaptiveLayout><ManufacturingDashboard /></AdaptiveLayout></ProtectedRoute>} />
+          <Route path="/manufacturing/logs" element={<ProtectedRoute roles={['admin', 'super_admin', 'manufacturing_manager', 'store_incharge', 'procurement']}><AdaptiveLayout><ManufacturingDashboard /></AdaptiveLayout></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
