@@ -8,7 +8,7 @@ const { allowRoles, ROLES } = require('../middleware/rbac');
  * GET /api/manufacturing/logs
  * Fetch all internal production logs
  */
-router.get('/logs', auth, allowRoles([ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.STORE_INCHARGE, ROLES.PROCUREMENT, ROLES.MANUFACTURING_MANAGER]), async (req, res) => {
+router.get('/logs', auth, allowRoles(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.STORE_INCHARGE, ROLES.PROCUREMENT, ROLES.MANUFACTURING_MANAGER), async (req, res) => {
     try {
         const [rows] = await db.query(`
             SELECT ipl.*, rm.name as material_name, u.name as creator_name
@@ -28,7 +28,7 @@ router.get('/logs', auth, allowRoles([ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.STOR
  * POST /api/manufacturing/record
  * Record internal production of raw materials (PENDING approval)
  */
-router.post('/record', auth, allowRoles([ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANUFACTURING_MANAGER]), async (req, res) => {
+router.post('/record', auth, allowRoles(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANUFACTURING_MANAGER), async (req, res) => {
     const { material_id, quantity, batch_number, production_date, notes } = req.body;
 
     if (!material_id || !quantity || !production_date) {
@@ -53,7 +53,7 @@ router.post('/record', auth, allowRoles([ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.M
  * PATCH /api/manufacturing/logs/:id/status
  * Approve or Reject production log (Updates Stock on approval)
  */
-router.patch('/logs/:id/status', auth, allowRoles([ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.STORE_INCHARGE]), async (req, res) => {
+router.patch('/logs/:id/status', auth, allowRoles(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.STORE_INCHARGE), async (req, res) => {
     const { id } = req.params;
     const { status, remark } = req.body;
 
