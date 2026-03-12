@@ -29,7 +29,9 @@ export default function ManufacturingDashboard() {
             setMaterials(materialsRes.data);
         } catch (error) {
             console.error('Error fetching data:', error);
-            alert('Failed to load materials or logs. Please check your connection or permissions.');
+            const status = error.response?.status;
+            const errorMsg = error.response?.data?.error || error.message;
+            alert(`Failed to load data (Status: ${status}). Detail: ${errorMsg}`);
         } finally {
             setLoading(false);
         }
