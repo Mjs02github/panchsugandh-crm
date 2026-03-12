@@ -50,7 +50,6 @@ import RawMaterials from './pages/Store/RawMaterials';
 import BOMManager from './pages/Store/BOMManager';
 import ProductionEntry from './pages/Store/ProductionEntry';
 import SampleManagement from './pages/Store/SampleManagement';
-import SampleManagement from './pages/Store/SampleManagement';
 import PrintInvoice from './pages/PrintInvoice';
 import ManufacturingDashboard from './pages/manufacturing/ManufacturingDashboard';
 import ManufacturingApprovals from './pages/manufacturing/ManufacturingApprovals';
