@@ -40,12 +40,12 @@ router.get('/raw-materials', auth, async (req, res) => {
 // POST /api/store/raw-materials
 router.post('/raw-materials', auth, allowRoles(ROLES.ADMIN, ROLES.STORE_INCHARGE), async (req, res) => {
     try {
-        const { name, sku, unit, min_stock } = req.body;
+        const { name, sku, unit, min_stock, is_internal_mfg } = req.body;
         if (!name || !unit) return res.status(400).json({ error: 'Name and unit are required.' });
 
         const [result] = await db.query(
-            'INSERT INTO raw_materials (name, sku, unit, min_stock) VALUES (?, ?, ?, ?)',
-            [name, sku || null, unit, min_stock || 0]
+            'INSERT INTO raw_materials (name, sku, unit, min_stock, is_internal_mfg) VALUES (?, ?, ?, ?, ?)',
+            [name, sku || null, unit, min_stock || 0, !!is_internal_mfg]
         );
         res.status(201).json({ id: result.insertId, message: 'Raw material created.' });
     } catch (err) {

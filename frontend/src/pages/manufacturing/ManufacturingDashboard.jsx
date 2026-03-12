@@ -29,6 +29,7 @@ export default function ManufacturingDashboard() {
             setMaterials(materialsRes.data);
         } catch (error) {
             console.error('Error fetching data:', error);
+            alert('Failed to load materials or logs. Please check your connection or permissions.');
         } finally {
             setLoading(false);
         }
@@ -201,9 +202,13 @@ export default function ManufacturingDashboard() {
                                     className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
                                 >
                                     <option value="">Choose material...</option>
-                                    {materials.filter(m => m.is_internal_mfg).map(m => (
-                                        <option key={m.id} value={m.id}>{m.name} ({m.qty_on_hand} {m.unit} on hand)</option>
-                                    ))}
+                                    {materials.filter(m => Number(m.is_internal_mfg) === 1).length > 0 ? (
+                                        materials.filter(m => Number(m.is_internal_mfg) === 1).map(m => (
+                                            <option key={m.id} value={m.id}>{m.name} ({m.qty_on_hand} {m.unit} on hand)</option>
+                                        ))
+                                    ) : (
+                                        <option disabled>No factory items authorized by Store</option>
+                                    )}
                                 </select>
                             </div>
 
