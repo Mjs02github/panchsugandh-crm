@@ -161,6 +161,15 @@ pool.getConnection(async (err, conn) => {
                 )
             `);
 
+            // Migration for existing inventory table
+            try {
+                await conn.promise().query("ALTER TABLE inventory ADD COLUMN IF NOT EXISTS batch_number VARCHAR(50) NULL AFTER product_id");
+                await conn.promise().query("ALTER TABLE inventory ADD COLUMN IF NOT EXISTS mrp DECIMAL(10,2) DEFAULT 0.00 AFTER batch_number");
+                await conn.promise().query("ALTER TABLE inventory ADD UNIQUE INDEX IF NOT EXISTS uq_prod_batch (product_id, batch_number)");
+            } catch (migErr) {
+                console.warn('⚠️ Inventory migration note:', migErr.message);
+            }
+
             // 4. Production Logs (Added mrp)
             await conn.promise().query(`
                 CREATE TABLE IF NOT EXISTS production_logs (
@@ -177,6 +186,14 @@ pool.getConnection(async (err, conn) => {
                     CONSTRAINT fk_prod_user    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
                 )
             `);
+
+            // Migration for existing production_logs table
+            try {
+                await conn.promise().query("ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS batch_number VARCHAR(50) NULL AFTER product_id");
+                await conn.promise().query("ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS mrp DECIMAL(10,2) DEFAULT 0.00 AFTER batch_number");
+            } catch (migErr) {
+                console.warn('⚠️ Production logs migration note:', migErr.message);
+            }
 
             // 4. Raw Material Inward Logs
             await conn.promise().query(`
