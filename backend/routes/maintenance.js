@@ -3,14 +3,30 @@ const router = express.Router();
 const db = require('../db');
 const auth = require('../middleware/auth');
 const { allowRoles, ROLES } = require('../middleware/rbac');
+const bcrypt = require('bcryptjs');
 
 /**
  * POST /api/maintenance/reset-all-data
  * Clears all business data while preserving user accounts and roles.
  * ONLY ACCESSIBLE BY SUPER ADMIN.
+ * Body: { password }
  */
 router.post('/reset-all-data', auth, allowRoles(ROLES.SUPER_ADMIN), async (req, res) => {
     try {
+        const { password } = req.body;
+        if (!password) {
+            return res.status(400).json({ error: 'Password is required for security verification.' });
+        }
+
+        // 0. Verify Password
+        const [userRows] = await db.query('SELECT password FROM users WHERE id = ?', [req.user.id]);
+        if (!userRows.length) return res.status(404).json({ error: 'User not found.' });
+        
+        const isMatch = await bcrypt.compare(password, userRows[0].password);
+        if (!isMatch) {
+            return res.status(401).json({ error: 'Invalid password. Security verification failed.' });
+        }
+
         console.log(`⚠️ System reset initiated by: ${req.user.name} (${req.user.id})`);
 
         // 1. Get all tables in the database

@@ -6,16 +6,21 @@ export default function Maintenance() {
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
     const [confirmText, setConfirmText] = useState('');
+    const [password, setPassword] = useState('');
     const [error, setError] = useState('');
 
     const handleReset = async (e) => {
         e.preventDefault();
         if (confirmText !== 'RESET') {
-            setError('Please type RESET to confirm.');
+            setError('Please type RESET in the first box.');
+            return;
+        }
+        if (!password) {
+            setError('Please enter your admin password.');
             return;
         }
 
-        if (!window.confirm('CRITICAL WARNING: This will permanently delete all business data (Orders, Retailers, Stock, Payments, etc). Only USERS and ROLES will be preserved. Are you absolutely sure?')) {
+        if (!window.confirm('CRITICAL WARNING: This will permanently delete all business data. USERS and ROLES will be preserved. Are you absolutely sure?')) {
             return;
         }
 
@@ -24,9 +29,10 @@ export default function Maintenance() {
         setResult(null);
 
         try {
-            const { data } = await api.post('/api/maintenance/reset-all-data');
+            const { data } = await api.post('/api/maintenance/reset-all-data', { password });
             setResult(data);
             setConfirmText('');
+            setPassword('');
         } catch (err) {
             setError(err.response?.data?.error || 'System reset failed.');
             console.error(err);
@@ -97,6 +103,19 @@ export default function Maintenance() {
                                     onChange={(e) => setConfirmText(e.target.value)}
                                     placeholder="Type RESET here"
                                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-red-500 outline-none transition-all font-mono"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">
+                                    Admin Password
+                                </label>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="Enter your security password"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-red-500 outline-none transition-all"
                                 />
                             </div>
 
