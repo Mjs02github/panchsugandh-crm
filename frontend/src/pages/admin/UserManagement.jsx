@@ -48,16 +48,24 @@ export default function UserManagement() {
     // Role filter tab
     const [tab, setTab] = useState('all');
 
+    // Target setting
+    const [targetUser, setTargetUser] = useState(null);
+    const [targetForm, setTargetForm] = useState({ target_amount: '', target_month: new Date().toISOString().slice(0, 7) });
+    const [targets, setTargets] = useState([]);
+    const [savingTarget, setSavingTarget] = useState(false);
+
     const load = () => {
         setLoading(true);
         Promise.all([
             api.get('/users').then(r => r.data),
             api.get('/users/roles/list').then(r => r.data),
-            api.get('/areas').then(r => r.data).catch(() => [])
-        ]).then(([u, r, a]) => {
+            api.get('/areas').then(r => r.data).catch(() => []),
+            api.get('/targets').then(r => r.data).catch(() => []),
+        ]).then(([u, r, a, t]) => {
             setUsers(u);
             setRoles(r);
             setAreas(a);
+            setTargets(t);
         }).finally(() => setLoading(false));
     };
     useEffect(() => { load(); }, []);
@@ -130,6 +138,22 @@ export default function UserManagement() {
         } catch (err) {
             setEditErr(err.response?.data?.error || 'Failed to update.');
         } finally { setEditLoading(false); }
+    };
+
+    const handleSetTarget = async (e) => {
+        e.preventDefault();
+        setSavingTarget(true);
+        try {
+            await api.post('/targets', {
+                salesperson_id: targetUser.id,
+                target_month: targetForm.target_month + '-01',
+                target_amount: parseFloat(targetForm.target_amount),
+            });
+            setTargetUser(null);
+            load();
+        } catch (err) {
+            alert(err.response?.data?.error || 'Failed to set target.');
+        } finally { setSavingTarget(false); }
     };
 
     const roleNameDisplay = (r) => (ROLE_DISPLAY[r]?.label || r);
@@ -267,6 +291,19 @@ export default function UserManagement() {
                                     className="text-xs px-2.5 py-1.5 border border-brand-200 text-brand-700 bg-brand-50 rounded-lg font-medium">
                                     ✏️ Edit
                                 </button>
+                                {u.role === 'salesperson' && (
+                                    <button onClick={() => {
+                                        setTargetUser(u);
+                                        const thisMonthTgt = targets.find(t => t.salesperson_id === u.id && t.target_month.startsWith(new Date().toISOString().slice(0, 7)));
+                                        setTargetForm({
+                                            target_amount: thisMonthTgt ? thisMonthTgt.target_amount : '',
+                                            target_month: new Date().toISOString().slice(0, 7)
+                                        });
+                                    }}
+                                        className="text-xs px-2.5 py-1.5 border border-brand-200 text-brand-700 bg-brand-50 rounded-lg font-medium">
+                                        🎯 Target
+                                    </button>
+                                )}
                                 {u.id !== me?.id && (
                                     <button onClick={() => toggleActive(u)}
                                         className={`text-xs px-2.5 py-1.5 border rounded-lg font-medium transition-all ${u.is_active ? 'border-red-200 text-red-600 bg-red-50' : 'border-green-200 text-green-600 bg-green-50'
@@ -374,6 +411,36 @@ export default function UserManagement() {
                 </div>
             )}
 
-                    </div>
+            {targetUser && (
+                <div className="fixed inset-0 z-50 bg-black/50 flex items-end" onClick={() => setTargetUser(null)}>
+                    <form onSubmit={handleSetTarget} onClick={e => e.stopPropagation()}
+                        className="bg-white rounded-t-3xl w-full max-w-[480px] mx-auto px-5 pt-5 pb-8 space-y-4">
+                        <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-1" />
+                        <h2 className="font-bold text-gray-800 text-base">Set Monthly Target — {targetUser.name}</h2>
+                        <div>
+                            <label className="label">Month</label>
+                            <input type="month" className="input" value={targetForm.target_month}
+                                onChange={e => setTargetForm(f => ({ ...f, target_month: e.target.value }))}
+                                required min={new Date().toISOString().slice(0, 7)} />
+                        </div>
+                        <div>
+                            <label className="label">Target Amount (₹)</label>
+                            <input type="number" step="1000" min="0" className="input" value={targetForm.target_amount}
+                                onChange={e => setTargetForm(f => ({ ...f, target_amount: e.target.value }))} required />
+                        </div>
+                        <div className="flex gap-2 pt-2">
+                            <button type="submit" className="flex-1 py-3 bg-brand-600 text-white rounded-xl font-semibold text-sm"
+                                disabled={savingTarget}>
+                                {savingTarget ? 'Saving…' : '🎯 Set Target'}
+                            </button>
+                            <button type="button" onClick={() => setTargetUser(null)}
+                                className="flex-1 py-3 border border-gray-300 text-gray-600 rounded-xl font-semibold text-sm">
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
+        </div>
     );
 }

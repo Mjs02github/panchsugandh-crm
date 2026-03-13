@@ -431,7 +431,23 @@ pool.getConnection(async (err, conn) => {
                 )
             `);
 
-            console.log(`✅ Notification system tables verified`);
+            // 4. Salesperson Targets
+            await conn.promise().query(`
+                CREATE TABLE IF NOT EXISTS targets (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    salesperson_id INT UNSIGNED NOT NULL,
+                    target_month DATE NOT NULL,
+                    target_amount DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+                    achieved_amount DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+                    assigned_by INT UNSIGNED NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    UNIQUE KEY uq_sp_month (salesperson_id, target_month),
+                    CONSTRAINT fk_target_sp FOREIGN KEY (salesperson_id) REFERENCES users(id) ON DELETE CASCADE
+                )
+            `);
+
+            console.log(`✅ Notification & Target tables verified`);
         } catch (notifErr) {
             console.error('❌ Failed to run Notification system migration:', notifErr.message);
         }

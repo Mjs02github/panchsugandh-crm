@@ -49,26 +49,47 @@ router.get('/stats', auth, async (req, res) => {
 
         } else if (role === ROLES.SALESPERSON) {
             const [[orders]] = await db.query(
-                `SELECT
-           COUNT(*) AS total_orders,
-           SUM(total_amount) AS total_revenue,
-           SUM(CASE WHEN status='PENDING'   THEN 1 ELSE 0 END) AS pending,
-           SUM(CASE WHEN status='DELIVERED' THEN 1 ELSE 0 END) AS delivered,
-           SUM(CASE WHEN order_date=? THEN 1 ELSE 0 END) AS today_orders,
-           SUM(CASE WHEN DATE_FORMAT(order_date,'%%Y-%%m')=? THEN total_amount ELSE 0 END) AS mtd_revenue
-         FROM sales_orders WHERE salesperson_id=? AND status!='CANCELLED'`,
-                [today, month, userId]
+                `SELECT 
+            COUNT(*) AS total_orders,
+            SUM(total_amount) AS total_revenue,
+            SUM(CASE WHEN order_date=? THEN 1 ELSE 0 END) AS today_orders,
+            SUM(CASE WHEN order_date=? THEN total_amount ELSE 0 END) AS today_revenue,
+            SUM(CASE WHEN DATE_FORMAT(order_date,'%Y-%m')=? THEN total_amount ELSE 0 END) AS mtd_revenue
+          FROM sales_orders WHERE salesperson_id=? AND status!='CANCELLED'`,
+                [today, today, month, userId]
             );
-            const [[target]] = await db.query(
-                `SELECT target_amount, achieved_amount FROM targets
-         WHERE salesperson_id=? AND target_month=?`,
+
+            const [[targetRow]] = await db.query(
+                `SELECT target_amount FROM targets 
+          WHERE salesperson_id=? AND target_month=?`,
                 [userId, month + '-01']
             );
+
             const [[visits]] = await db.query(
                 `SELECT COUNT(*) AS today_visits FROM visits WHERE salesperson_id=? AND visit_date=?`,
                 [userId, today]
             );
-            stats = { ...orders, ...visits, target: target || { target_amount: 0, achieved_amount: 0 } };
+
+            // Pending Collection for this salesperson
+            const [[pending]] = await db.query(
+                `SELECT SUM(so.total_amount - COALESCE(p.paid, 0)) AS pending_collection
+                 FROM sales_orders so
+                 LEFT JOIN (
+                    SELECT order_id, SUM(amount) AS paid FROM payment_collections GROUP BY order_id
+                 ) p ON so.id = p.order_id
+                 WHERE so.salesperson_id = ? AND so.status IN ('BILLED','READY_TO_SHIP','DELIVERED')`,
+                [userId]
+            );
+
+            stats = { 
+                ...orders, 
+                ...visits, 
+                ...pending,
+                target: targetRow ? { 
+                    target_amount: targetRow.target_amount, 
+                    achieved_amount: orders.mtd_revenue || 0 
+                } : null 
+            };
 
         } else if (role === ROLES.SALES_OFFICER) {
             const [[orders]] = await db.query(

@@ -90,9 +90,11 @@ export default function Dashboard() {
                 <AttendanceWidget user={user} />
                 <div className="grid grid-cols-2 gap-3">
                     <StatCard label="Today's Orders" value={stats.today_orders} icon="📋" color="brand" />
-                    <StatCard label="Today Visits" value={stats.today_visits} icon="🗺️" color="blue" />
+                    <StatCard label="Today Revenue" value={`₹${(stats.today_revenue || 0).toLocaleString('en-IN')}`} icon="💰" color="green" />
+                    <StatCard label="MTD Revenue" value={`₹${(stats.mtd_revenue || 0).toLocaleString('en-IN')}`} icon="📈" color="blue" />
+                    <StatCard label="Pending Coll." value={`₹${(stats.pending_collection || 0).toLocaleString('en-IN')}`} icon="📥" color="yellow" />
+                    <StatCard label="Today Visits" value={stats.today_visits} icon="🗺️" color="purple" />
                 </div>
-                <StatCard label="MTD Revenue" value={`₹${(stats.mtd_revenue || 0).toLocaleString('en-IN')}`} icon="💰" color="green" />
                 {stats.target && (
                     <div className="card">
                         <div className="flex justify-between items-center mb-2">
