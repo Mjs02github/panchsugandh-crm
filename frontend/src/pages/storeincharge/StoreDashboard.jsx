@@ -41,6 +41,59 @@ export default function StoreDashboard() {
         fetchDashboardData();
     }, []);
 
+    const [downloading, setDownloading] = useState(false);
+
+    const handleDownload = async (endpoint, fileName) => {
+        setDownloading(true);
+        try {
+            const token = localStorage.getItem('crm_token');
+            const baseURL = api.defaults.baseURL || '/api';
+            const response = await fetch(
+                `${baseURL}${endpoint}?format=excel`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (!response.ok) throw new Error('Download failed');
+
+            const blob = await response.blob();
+
+            if (window.Capacitor?.isNativePlatform()) {
+                const { Filesystem, Directory } = await import('@capacitor/filesystem');
+                const { Share } = await import('@capacitor/share');
+
+                const reader = new FileReader();
+                reader.readAsDataURL(blob);
+                const base64Data = await new Promise((resolve, reject) => {
+                    reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                    reader.onerror = reject;
+                });
+
+                const savedFile = await Filesystem.writeFile({
+                    path: fileName,
+                    data: base64Data,
+                    directory: Directory.Documents
+                });
+
+                await Share.share({
+                    title: fileName,
+                    url: savedFile.uri,
+                });
+            } else {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+        } catch (err) {
+            console.error('Download error:', err);
+            alert('Failed to download report. Please ensure you are logged in.');
+        } finally {
+            setDownloading(false);
+        }
+    };
+
     return (
         <div className="pb-24 max-w-5xl mx-auto">
             <header className="page-header py-6">
@@ -151,10 +204,10 @@ export default function StoreDashboard() {
                         <span className="p-2 bg-purple-50 rounded-lg">📊</span> MIS & Analytics Reports
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <a
-                            href={`${api.defaults.baseURL}/reports/raw-material-mis?download=true`}
-                            target="_blank" rel="noreferrer"
-                            className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-purple-50 transition-colors group"
+                        <button
+                            onClick={() => handleDownload('/reports/raw-material-mis', 'raw_material_mis.xlsx')}
+                            disabled={downloading}
+                            className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-purple-50 transition-colors group w-full text-left"
                         >
                             <div className="flex items-center gap-3">
                                 <span className="text-2xl">📋</span>
@@ -163,12 +216,14 @@ export default function StoreDashboard() {
                                     <p className="text-xs text-gray-500">Current stock, usage & inward logs</p>
                                 </div>
                             </div>
-                            <span className="text-xs font-bold text-purple-600 group-hover:translate-x-1 transition-transform">Download Excel ↓</span>
-                        </a>
-                        <a
-                            href={`${api.defaults.baseURL}/reports/product-sales-batch-wise?download=true`}
-                            target="_blank" rel="noreferrer"
-                            className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-purple-50 transition-colors group"
+                            <span className="text-xs font-bold text-purple-600 group-hover:translate-x-1 transition-transform">
+                                {downloading ? '...' : 'Download Excel ↓'}
+                            </span>
+                        </button>
+                        <button
+                            onClick={() => handleDownload('/reports/product-sales-batch-wise', 'product_sales_batch_wise.xlsx')}
+                            disabled={downloading}
+                            className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-purple-50 transition-colors group w-full text-left"
                         >
                             <div className="flex items-center gap-3">
                                 <span className="text-2xl">📈</span>
@@ -177,8 +232,10 @@ export default function StoreDashboard() {
                                     <p className="text-xs text-gray-500">Detailed sales report with batch info</p>
                                 </div>
                             </div>
-                            <span className="text-xs font-bold text-purple-600 group-hover:translate-x-1 transition-transform">Download Excel ↓</span>
-                        </a>
+                            <span className="text-xs font-bold text-purple-600 group-hover:translate-x-1 transition-transform">
+                                {downloading ? '...' : 'Download Excel ↓'}
+                            </span>
+                        </button>
                     </div>
                 </div>
             </main>

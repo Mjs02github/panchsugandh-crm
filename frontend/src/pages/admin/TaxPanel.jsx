@@ -33,8 +33,48 @@ export default function TaxPanel() {
 
     useEffect(() => { load(); }, []);
 
-    const downloadExcel = () => {
-        window.open(`${api.defaults.baseURL}/reports/gst-data?format=excel&from=${range.from}&to=${range.to}`, '_blank');
+    const downloadExcel = async () => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('crm_token');
+            const response = await fetch(
+                `${api.defaults.baseURL}/reports/gst-data?format=excel&from=${range.from}&to=${range.to}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (!response.ok) throw new Error('Download failed');
+
+            const blob = await response.blob();
+            const fileName = `GST_Data_${range.from}_to_${range.to}.xlsx`;
+
+            if (window.Capacitor?.isNativePlatform()) {
+                const { Filesystem, Directory } = await import('@capacitor/filesystem');
+                const { Share } = await import('@capacitor/share');
+                const reader = new FileReader();
+                reader.readAsDataURL(blob);
+                const base64Data = await new Promise((resolve, reject) => {
+                    reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                    reader.onerror = reject;
+                });
+                const savedFile = await Filesystem.writeFile({
+                    path: fileName,
+                    data: base64Data,
+                    directory: Directory.Documents
+                });
+                await Share.share({ title: fileName, url: savedFile.uri });
+            } else {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+        } catch (err) {
+            console.error('Download err:', err);
+            alert('Failed to download Excel.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const downloadJSON = () => {
