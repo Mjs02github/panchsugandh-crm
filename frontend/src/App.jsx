@@ -60,7 +60,7 @@ function RoleRouter() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
   const defaults = {
-    salesperson: '/orders',
+    salesperson: '/dashboard',
     bill_operator: '/billing',
     delivery_incharge: '/delivery',
     store_incharge: '/store',

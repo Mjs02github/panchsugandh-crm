@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 // Exact same navbar logic mapped to the Desktop sidebar to ensure no missing features!
 const NAV_CONFIG = {
     salesperson: [
+        { label: 'Dashboard', icon: '🏠', path: '/dashboard' },
         { label: 'Orders', icon: '📋', path: '/orders' },
         { label: 'New Order', icon: '➕', path: '/orders/new' },
         { label: 'Payments', icon: '💰', path: '/payments' },

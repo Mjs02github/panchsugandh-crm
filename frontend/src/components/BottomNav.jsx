@@ -4,8 +4,9 @@ import { useAuth } from '../context/AuthContext';
 
 const NAV_CONFIG = {
     salesperson: [
+        { label: 'Home', icon: '🏠', path: '/dashboard' },
         { label: 'Orders', icon: '📋', path: '/orders' },
-        { label: 'New Order', icon: '➕', path: '/orders/new' },
+        { label: 'New', icon: '➕', path: '/orders/new' },
         { label: 'Payments', icon: '💰', path: '/payments' },
         { label: 'Parties', icon: '🏪', path: '/store/retailers' },
         { label: 'Reports', icon: '📊', path: '/reports' },
