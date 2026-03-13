@@ -236,7 +236,19 @@ pool.getConnection(async (err, conn) => {
                 )
             `);
 
-            console.log(`✅ Store Management tables verified (BOM & Samples ready)`);
+            // 7. Order Items (Added batch_number and mrp for reporting)
+            try {
+                const [cols] = await conn.promise().query("SHOW COLUMNS FROM order_items LIKE 'batch_number'");
+                if (cols.length === 0) {
+                    await conn.promise().query("ALTER TABLE order_items ADD COLUMN batch_number VARCHAR(50) NULL AFTER product_id");
+                    await conn.promise().query("ALTER TABLE order_items ADD COLUMN mrp DECIMAL(10,2) DEFAULT 0.00 AFTER batch_number");
+                    console.log(`✅ order_items table updated with batch_number/mrp`);
+                }
+            } catch (migErr) {
+                console.warn('⚠️ Order items migration note:', migErr.message);
+            }
+
+            console.log(`✅ Store Management & Order tables verified`);
         } catch (prodErr) {
             console.error('❌ Failed to run Store Management migration:', prodErr.message);
         }

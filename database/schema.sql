@@ -178,6 +178,8 @@ CREATE TABLE order_items (
   id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   order_id        INT UNSIGNED NOT NULL,
   product_id      INT UNSIGNED NOT NULL,
+  batch_number    VARCHAR(50) NULL,
+  mrp             DECIMAL(10,2) DEFAULT 0.00,
   qty_ordered     INT NOT NULL,
   qty_billed      INT NULL,              -- set by Bill Operator (may differ from ordered)
   unit_price      DECIMAL(10,2) NOT NULL,
