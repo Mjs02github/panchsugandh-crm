@@ -56,8 +56,11 @@ export default function Reports() {
                 `${baseURL}${currentTab.endpoint}?from=${from}&to=${to}&format=excel`,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-            if (!response.ok) throw new Error('Download failed');
-
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error || `Download failed with status ${response.status}`);
+            }
+ 
             const blob = await response.blob();
             const fileName = `${currentTab.key}_report_${from}_to_${to}.xlsx`;
 
@@ -96,7 +99,7 @@ export default function Reports() {
             }
         } catch (err) {
             console.error('Download err:', err);
-            setError('Failed to download Excel file.');
+            setError(`Failed to download Excel: ${err.message}`);
         } finally {
             setDownloading(false);
         }

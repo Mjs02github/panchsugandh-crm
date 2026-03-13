@@ -37,15 +37,19 @@ export default function TaxPanel() {
         setLoading(true);
         try {
             const token = localStorage.getItem('crm_token');
+            const baseURL = api.defaults.baseURL || '/api';
             const response = await fetch(
-                `${api.defaults.baseURL}/reports/gst-data?format=excel&from=${range.from}&to=${range.to}`,
+                `${baseURL}/reports/gst-data?format=excel&from=${range.from}&to=${range.to}`,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-            if (!response.ok) throw new Error('Download failed');
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error || `Download failed with status ${response.status}`);
+            }
 
             const blob = await response.blob();
             const fileName = `GST_Data_${range.from}_to_${range.to}.xlsx`;
-
+            // ... (rest of the code remains the same logically)
             if (window.Capacitor?.isNativePlatform()) {
                 const { Filesystem, Directory } = await import('@capacitor/filesystem');
                 const { Share } = await import('@capacitor/share');
@@ -71,7 +75,7 @@ export default function TaxPanel() {
             }
         } catch (err) {
             console.error('Download err:', err);
-            alert('Failed to download Excel.');
+            alert(`Failed to download Excel: ${err.message}`);
         } finally {
             setLoading(false);
         }

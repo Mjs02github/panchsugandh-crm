@@ -53,10 +53,13 @@ export default function StoreDashboard() {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
-            if (!response.ok) throw new Error('Download failed');
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error || `Download failed with status ${response.status}`);
+            }
 
             const blob = await response.blob();
-
+            // ... (rest of the code remains the same logically)
             if (window.Capacitor?.isNativePlatform()) {
                 const { Filesystem, Directory } = await import('@capacitor/filesystem');
                 const { Share } = await import('@capacitor/share');
@@ -88,7 +91,7 @@ export default function StoreDashboard() {
             }
         } catch (err) {
             console.error('Download error:', err);
-            alert('Failed to download report. Please ensure you are logged in.');
+            alert(`Failed to download report: ${err.message}`);
         } finally {
             setDownloading(false);
         }
