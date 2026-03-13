@@ -29,7 +29,7 @@ export default function Maintenance() {
         setResult(null);
 
         try {
-            const { data } = await api.post('/api/maintenance/reset-all-data', { password });
+            const { data } = await api.post('/maintenance/reset-all-data', { password });
             setResult(data);
             setConfirmText('');
             setPassword('');
