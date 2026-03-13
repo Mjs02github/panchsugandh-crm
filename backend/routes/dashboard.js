@@ -19,7 +19,8 @@ router.get('/stats', auth, async (req, res) => {
                 [[orders]],
                 [[collections]],
                 [[retailers]],
-                [[users]]
+                [[users]],
+                [[lowStock]]
             ] = await Promise.all([
                 db.query(
                     `SELECT
@@ -43,9 +44,10 @@ router.get('/stats', auth, async (req, res) => {
                 ),
                 db.query('SELECT COUNT(*) AS total_retailers FROM retailers WHERE is_active=1'),
                 db.query('SELECT COUNT(*) AS total_users FROM users WHERE is_active=1'),
+                db.query('SELECT COUNT(*) AS low_stock_products FROM inventory WHERE qty_on_hand < 10'),
             ]);
 
-            stats = { ...orders, ...collections, ...retailers, ...users };
+            stats = { ...orders, ...collections, ...retailers, ...users, ...lowStock };
 
         } else if (role === ROLES.SALESPERSON) {
             const [[orders]] = await db.query(

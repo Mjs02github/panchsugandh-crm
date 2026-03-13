@@ -58,7 +58,7 @@ export default function Dashboard() {
         );
 
         if (['super_admin', 'admin'].includes(role)) return (
-            <div className="space-y-4">
+            <div className="space-y-6">
                 {stats.cancel_requests > 0 && (
                     <div className="card bg-red-50 border border-red-200">
                         <div className="flex justify-between items-center">
@@ -70,18 +70,48 @@ export default function Dashboard() {
                         </div>
                     </div>
                 )}
-                <div className="grid grid-cols-2 gap-3">
-                    <StatCard label="Today's Orders" value={stats.today_orders} icon="📋" color="brand" />
-                    <StatCard label="Today Revenue" value={`₹${(stats.today_revenue || 0).toLocaleString('en-IN')}`} icon="💰" color="green" />
-                    <StatCard label="MTD Revenue" value={`₹${(stats.mtd_revenue || 0).toLocaleString('en-IN')}`} icon="📈" color="blue" />
-                    <StatCard label="Cancel Requests" value={stats.cancel_requests || 0} icon="⚠️" color="red" />
-                    <StatCard label="Pending Bills" value={stats.pending} icon="🟡" color="yellow" />
-                    <StatCard label="Billed" value={stats.billed} icon="📦" color="purple" />
-                    <StatCard label="Ready to Ship" value={stats.ready_to_ship} icon="🚚" color="blue" />
-                    <StatCard label="Delivered" value={stats.delivered} icon="✅" color="green" />
-                    <StatCard label="Total Retailers" value={stats.total_retailers} icon="🏪" color="brand" />
-                    <StatCard label="Active Users" value={stats.total_users} icon="👥" color="blue" />
-                </div>
+
+                {/* Segment: Sales Overview */}
+                <section>
+                    <h2 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+                        <span className="w-1 h-4 bg-brand-500 rounded-full"></span>
+                        Sales Overview
+                    </h2>
+                    <div className="grid grid-cols-2 gap-3">
+                        <StatCard label="Today's Orders" value={stats.today_orders} icon="📋" color="brand" />
+                        <StatCard label="Today Revenue" value={`₹${(stats.today_revenue || 0).toLocaleString('en-IN')}`} icon="💰" color="green" />
+                        <StatCard label="Today Collected" value={`₹${(stats.today_collected || 0).toLocaleString('en-IN')}`} icon="📥" color="blue" />
+                        <StatCard label="MTD Revenue" value={`₹${(stats.mtd_revenue || 0).toLocaleString('en-IN')}`} icon="📈" color="purple" />
+                        <StatCard label="Total Retailers" value={stats.total_retailers} icon="🏪" color="blue" />
+                        <StatCard label="Active Users" value={stats.total_users} icon="👥" color="brand" />
+                    </div>
+                </section>
+
+                {/* Segment: Billing & Finance */}
+                <section>
+                    <h2 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+                        <span className="w-1 h-4 bg-yellow-500 rounded-full"></span>
+                        Billing & Finance
+                    </h2>
+                    <div className="grid grid-cols-2 gap-3">
+                        <StatCard label="Pending Bills" value={stats.pending} icon="🟡" color="yellow" />
+                        <StatCard label="Cancel Requests" value={stats.cancel_requests || 0} icon="⚠️" color="red" />
+                    </div>
+                </section>
+
+                {/* Segment: Store & Logistics */}
+                <section>
+                    <h2 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+                        <span className="w-1 h-4 bg-blue-500 rounded-full"></span>
+                        Store & Logistics
+                    </h2>
+                    <div className="grid grid-cols-2 gap-3">
+                        <StatCard label="Billed (Packing)" value={stats.billed} icon="📦" color="purple" />
+                        <StatCard label="Ready to Ship" value={stats.ready_to_ship} icon="🚚" color="blue" />
+                        <StatCard label="Delivered" value={stats.delivered} icon="✅" color="green" />
+                        <StatCard label="Low Stock Items" value={stats.low_stock_products} icon="📉" color="red" />
+                    </div>
+                </section>
             </div>
         );
 
