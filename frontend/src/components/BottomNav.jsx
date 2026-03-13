@@ -60,6 +60,7 @@ const NAV_CONFIG = {
         { label: 'Notif', icon: '🔔', path: '/admin/notifications' },
         { label: 'Users', icon: '👤', path: '/admin/users' },
         { label: 'Reports', icon: '📊', path: '/reports' },
+        { label: 'Clean', icon: '🛠️', path: '/admin/maintenance' },
         { label: 'Chat', icon: '💬', path: '/chat', badge: true },
     ],
 };

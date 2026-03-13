@@ -85,6 +85,7 @@ const NAV_CONFIG = {
         { label: 'Notifications', icon: '🔔', path: '/admin/notifications' },
         { label: 'Store Requests', icon: '📝', path: '/procurement/requests' },
         { label: 'Reports', icon: '📊', path: '/reports' },
+        { label: 'Maintenance', icon: '🛠️', path: '/admin/maintenance' },
         { label: 'Chat', icon: '💬', path: '/chat', badge: true },
     ],
 };
