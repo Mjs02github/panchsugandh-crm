@@ -39,6 +39,7 @@
     "@capacitor/core": "^6.0.0",
     "@capacitor/filesystem": "^6.0.0",
     "@capacitor/geolocation": "^6.0.0",
+    "@capacitor/push-notifications": "^7.0.0",
     "@capacitor/share": "^6.0.0",
     "@react-google-maps/api": "^2.20.8",
     "axios": "^1.13.6",
