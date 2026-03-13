@@ -82,6 +82,7 @@ app.use('/api/chat', require('./routes/chat'));
 app.use('/api/store', require('./routes/store'));
 app.use('/api/procurement', require('./routes/procurement'));
 app.use('/api/manufacturing', require('./routes/manufacturing'));
+app.use('/api/maintenance', require('./routes/maintenance'));
 
 // ── Health check (verify server + DB) ───────────────────────
 app.get('/api/health', async (req, res) => {
