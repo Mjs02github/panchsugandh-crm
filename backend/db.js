@@ -386,6 +386,56 @@ pool.getConnection(async (err, conn) => {
             console.error('❌ Failed to run internal production migration:', logErr.message);
         }
 
+        // Auto-migrate: Notification System
+        try {
+            // 1. In-app notifications
+            await conn.promise().query(`
+                CREATE TABLE IF NOT EXISTS notifications (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT UNSIGNED NOT NULL,
+                    title VARCHAR(255) NOT NULL,
+                    message TEXT NOT NULL,
+                    type VARCHAR(50) DEFAULT 'GENERAL',
+                    related_id INT UNSIGNED NULL,
+                    is_read BOOLEAN DEFAULT FALSE,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT fk_notif_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                )
+            `);
+
+            // 2. FCM Tokens for Push Notifications
+            await conn.promise().query(`
+                CREATE TABLE IF NOT EXISTS fcm_tokens (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT UNSIGNED NOT NULL,
+                    token VARCHAR(255) NOT NULL,
+                    platform ENUM('android', 'ios', 'web') NOT NULL,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    CONSTRAINT fk_fcm_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    UNIQUE KEY uq_token (token)
+                )
+            `);
+
+            // 3. Admin Broadcasts / Scheduled Notifications
+            await conn.promise().query(`
+                CREATE TABLE IF NOT EXISTS scheduled_notifications (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    target_role VARCHAR(50) NOT NULL DEFAULT 'ALL',
+                    title VARCHAR(255) NOT NULL,
+                    message TEXT NOT NULL,
+                    scheduled_at DATETIME NOT NULL,
+                    is_sent BOOLEAN DEFAULT FALSE,
+                    created_by INT UNSIGNED NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT fk_sched_user FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+                )
+            `);
+
+            console.log(`✅ Notification system tables verified`);
+        } catch (notifErr) {
+            console.error('❌ Failed to run Notification system migration:', notifErr.message);
+        }
+
         conn.release();
     }
 });

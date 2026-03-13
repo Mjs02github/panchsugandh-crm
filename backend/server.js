@@ -83,6 +83,7 @@ app.use('/api/store', require('./routes/store'));
 app.use('/api/procurement', require('./routes/procurement'));
 app.use('/api/manufacturing', require('./routes/manufacturing'));
 app.use('/api/maintenance', require('./routes/maintenance'));
+app.use('/api/notifications', require('./routes/notifications'));
 
 // ── Health check (verify server + DB) ───────────────────────
 app.get('/api/health', async (req, res) => {
@@ -131,4 +132,23 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
     console.log(`🚀 Panchsugandh CRM API running on port ${PORT}`);
+
+    // ── Background Scheduler (Every 1 minute) ──────────────────
+    const { broadcastNotification } = require('./utils/notificationService');
+    const db = require('./db');
+
+    setInterval(async () => {
+        try {
+            const [pending] = await db.query(
+                'SELECT * FROM scheduled_notifications WHERE is_sent = 0 AND scheduled_at <= NOW()'
+            );
+            for (const sn of pending) {
+                console.log(`📅 Processing scheduled notification: ${sn.title}`);
+                await broadcastNotification(sn.target_role, sn.title, sn.message, sn.created_by);
+                await db.query('UPDATE scheduled_notifications SET is_sent = 1 WHERE id = ?', [sn.id]);
+            }
+        } catch (err) {
+            console.error('Scheduler error:', err.message);
+        }
+    }, 60000); // 1 minute
 });

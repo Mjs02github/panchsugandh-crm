@@ -2,6 +2,7 @@ const express = require('express');
 const db = require('../db');
 const auth = require('../middleware/auth');
 const { allowRoles, ROLES } = require('../middleware/rbac');
+const { sendNotification, broadcastNotification } = require('../utils/notificationService');
 const router = express.Router();
 
 const ALL_ORDER_ROLES = [
@@ -233,6 +234,40 @@ router.post('/', auth, allowRoles(ROLES.SALESPERSON, ROLES.ADMIN, ROLES.SUPER_AD
         // );
 
         await conn.commit();
+
+        // ── Push Notifications ──
+        try {
+            // 1. Motivational notification for Salesperson
+            const quotes = [
+                "Great job! Every order counts. Keep the momentum going!",
+                "Fantastic! You're making progress one order at a time.",
+                "Well done! Success is the sum of small efforts repeated day in and day out.",
+                "Awesome work! Your dedication is paying off."
+            ];
+            const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+            await sendNotification(
+                req.user.id,
+                'Order Placed! 🚀',
+                `Successfully created ${order_number}. ${randomQuote}`,
+                'MOTIVATIONAL',
+                orderId
+            );
+
+            // 2. Alert for Bill Operators
+            const [billOps] = await db.query('SELECT id FROM users WHERE role = ? AND is_active = 1', [ROLES.BILL_OPERATOR]);
+            for (const op of billOps) {
+                await sendNotification(
+                    op.id,
+                    'New Order Pending 📋',
+                    `Order ${order_number} has been placed and is waiting for billing.`,
+                    'ORDER_CREATED',
+                    orderId
+                );
+            }
+        } catch (notifErr) {
+            console.error('Notification dispatch error:', notifErr.message);
+        }
+
         res.status(201).json({
             id: orderId,
             order_number,

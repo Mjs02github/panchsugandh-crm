@@ -1,4 +1,5 @@
 import { useAuth } from '../context/AuthContext';
+import NotificationBell from './NotificationBell';
 
 const ROLE_LABELS = {
     super_admin: 'Super Admin',
@@ -39,15 +40,18 @@ export default function Header() {
                     </div>
                 </div>
 
-                {/* Profile & Logout */}
-                <div className="flex flex-col items-end">
-                    <span className="text-sm font-semibold text-gray-700">{user.name?.split(' ')[0]}</span>
-                    <button
-                        onClick={logout}
-                        className="text-[10px] text-gray-500 hover:text-red-600 font-medium transition-colors"
-                    >
-                        Logout →
-                    </button>
+                {/* Profile & Notifications */}
+                <div className="flex items-center gap-3">
+                    <NotificationBell />
+                    <div className="flex flex-col items-end border-l pl-3 border-gray-100">
+                        <span className="text-sm font-semibold text-gray-700">{user.name?.split(' ')[0]}</span>
+                        <button
+                            onClick={logout}
+                            className="text-[10px] text-gray-500 hover:text-red-600 font-medium transition-colors"
+                        >
+                            Logout →
+                        </button>
+                    </div>
                 </div>
             </div>
         </header>

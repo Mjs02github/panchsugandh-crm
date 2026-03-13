@@ -44,6 +44,7 @@ import MaterialPlanning from './pages/procurement/MaterialPlanning';
 import RequestManagement from './pages/procurement/RequestManagement';
 import MaterialRequests from './pages/storeincharge/MaterialRequests';
 import Chat from './pages/Chat';
+import NotificationManagement from './pages/admin/NotificationManagement';
 
 // Store Management (New Production System)
 import RawMaterials from './pages/Store/RawMaterials';
@@ -192,6 +193,9 @@ export default function App() {
           } />
           <Route path="/admin/approvals" element={
             <ProtectedRoute roles={['admin', 'super_admin']}><AdaptiveLayout><Approvals /></AdaptiveLayout></ProtectedRoute>
+          } />
+          <Route path="/admin/notifications" element={
+            <ProtectedRoute roles={['admin', 'super_admin']}><AdaptiveLayout><NotificationManagement /></AdaptiveLayout></ProtectedRoute>
           } />
           <Route path="/chat" element={
             <ProtectedRoute roles={['admin', 'super_admin', 'sales_officer', 'salesperson', 'bill_operator', 'delivery_incharge', 'store_incharge', 'procurement']}><AdaptiveLayout><Chat /></AdaptiveLayout></ProtectedRoute>
